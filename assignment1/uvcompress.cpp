@@ -47,7 +47,11 @@ class SymbolTable {
 
 class BitStream {
     public:
-        BitStream(){}
+        BitStream(){
+            std::cout.put(0x1f);
+            std::cout.put(0x9d);
+            std::cout.put(0x90);
+        }
 
         void addBit(bool bit){
             stream.push_back(bit);
@@ -68,7 +72,7 @@ class BitStream {
             for (int i = 0; i < 8; ++i) {
                 bitset[i] = stream[i];
             }
-            // std::cout << "Bitset: " << bitset.to_string() << std::endl;
+            //std::cout << "Bitset: " << bitset.to_string() << std::endl;
 
             unsigned char byte = static_cast<unsigned char>(bitset.to_ulong());
             std::cout.put(byte);
@@ -102,28 +106,26 @@ int main(){
 
         if (symbolTable.contains(augmented)){
             working = augmented;
+
         }else if (symbolTable.getNextIndex() >= std::pow(2, 16)){
             uint index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
 
-            // std::cout << "index: " << index << "\n";
             // std::cout << "output: " << working << "\n";
-            // std::cout << "binaryString: " << binaryString << "\n";
+
             for (int idx = max_bits - num_bits; idx < max_bits; ++idx) {
                 stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
             }
-
             working = current;
+            
         }else{
             symbolTable.addSymbol(augmented);
             uint index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
 
-            // std::cout << "index: " << index << "\n";
             // std::cout << "output: " << working << "\n";
-            // std::cout << "binaryString: " << binaryString << "\n";
             for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
                 stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
             }
@@ -140,10 +142,7 @@ int main(){
         std::bitset<max_bits> binary{index};
         std::string binaryString = binary.to_string();
 
-        // std::cout << "index: " << index << "\n";
         // std::cout << "output: " << working << "\n";
-        // std::cout << "binaryString: " << binaryString << "\n";
-        // Iterate over the least significant num_bits in the binaryString
         for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
             stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
         }
