@@ -9,6 +9,9 @@
 #include <iostream>
 #include <unordered_map>
 #include <string>
+#include <bitset>
+#include <vector>
+#include <cmath>
 
 class SymbolTable {
     public:
@@ -19,42 +22,134 @@ class SymbolTable {
         }
 
         void addSymbol(const std::string& symbol){
-            table_[symbol] = size_;
-            ++size_;
+            table_[symbol] = next_idx_;
+            ++next_idx_;
         }
 
         bool contains(const std::string& symbol) const {
             return table_.find(symbol) != table_.end();
         }
 
-        int getIndex(const std::string& symbol) const {
+        uint16_t getSymbolIndex(const std::string& symbol) const {
             return table_.at(symbol);
         }
 
+        uint16_t getNextIndex() const {
+            return next_idx_;
+        }
+
     private:
-        // tracks the current size of the table
-        int size_ {256};
+        // next index to insert (256 reserved)
+        uint16_t next_idx_ {257};
         // dictionary of (key: symbol , value: index)
         std::unordered_map<std::string, int> table_;
 };
 
+class BitStream {
+    public:
+        BitStream(){}
+
+        void addBit(bool bit){
+            stream.push_back(bit);
+            ++size_;
+
+            if (size_ == 8){
+                flushStream();
+            }
+        }
+
+        void flushStream(){
+            while(size_ < 8){
+                stream.push_back(0);
+                ++size_;
+            }
+
+            std::bitset<8> bitset;
+            for (int i = 0; i < 8; ++i) {
+                bitset[i] = stream[i];
+            }
+            // std::cout << "Bitset: " << bitset.to_string() << std::endl;
+
+            unsigned char byte = static_cast<unsigned char>(bitset.to_ulong());
+            std::cout.put(byte);
+            stream.clear();
+            size_ = 0;
+        }
+
+    private:
+        std::vector<bool> stream;
+        int size_ {0};
+
+        
+};
+
 int main(){
 
-    //This placeholder code reads bytes from stdin and writes the bitwise complement
-    //to stdout (obviously this is useless for the assignment, but maybe it gives some impression
-    //of how I/O works in C++)
+    SymbolTable symbolTable;
+    BitStream stream;
+
+    int num_bits{9};
+    const int max_bits{16};
 
     char c {};
-    //The .get() method of std::istream objects (like the standard input stream std::cin) reads a single unformatted
-    //byte into the provided character (notice that c is passed by reference and is modified by the method).
-    //If the byte cannot be read, the return value of the method is equivalent to the boolean value 'false'.
-    // while(std::cin.get(c)){
+    std::string augmented{""};
+    std::string working{""};
 
-    //     //The .put() method of std::ostream objects (like std::cout) writes a single unformatted byte.
-    //     char c_complement {};
-    //     c_complement = ~c;
-    //     std::cout.put(c_complement);
-    // }`
+    while(std::cin.get(c)){
+        std::string current{c};
+
+        augmented = working + current;
+
+        if (symbolTable.contains(augmented)){
+            working = augmented;
+        }else if (symbolTable.getNextIndex() >= std::pow(2, 16)){
+            uint index = symbolTable.getSymbolIndex(working);
+            std::bitset<max_bits> binary{index};
+            std::string binaryString = binary.to_string();
+
+            // std::cout << "index: " << index << "\n";
+            // std::cout << "output: " << working << "\n";
+            // std::cout << "binaryString: " << binaryString << "\n";
+            for (int idx = max_bits - num_bits; idx < max_bits; ++idx) {
+                stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
+            }
+
+            working = current;
+        }else{
+            symbolTable.addSymbol(augmented);
+            uint index = symbolTable.getSymbolIndex(working);
+            std::bitset<max_bits> binary{index};
+            std::string binaryString = binary.to_string();
+
+            // std::cout << "index: " << index << "\n";
+            // std::cout << "output: " << working << "\n";
+            // std::cout << "binaryString: " << binaryString << "\n";
+            for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
+                stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
+            }
+
+            working = current;
+            if (symbolTable.getNextIndex() >= std::pow(2, num_bits)){
+                ++num_bits;
+            }
+        }
+    }
+
+    if(!working.empty()){
+        uint index = symbolTable.getSymbolIndex(working);
+        std::bitset<max_bits> binary{index};
+        std::string binaryString = binary.to_string();
+
+        // std::cout << "index: " << index << "\n";
+        // std::cout << "output: " << working << "\n";
+        // std::cout << "binaryString: " << binaryString << "\n";
+        // Iterate over the least significant num_bits in the binaryString
+        for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
+            stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
+        }
+    }
+
+    stream.flushStream();
 
     return 0;
 }
