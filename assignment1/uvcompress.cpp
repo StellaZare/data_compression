@@ -1,7 +1,8 @@
 /* uvcompress.cpp
    CSC 485B/CSC 578B
 
-   Placeholder starter code for UVCompress 
+   Stella Zarei
+   V00927722
 
    B. Bird - 2023-05-01
 */
@@ -107,7 +108,6 @@ int main(){
             working = augmented;
 
         }else if (symbolTable.getNextIndex() >= ( 1<< max_bits)){
-            //std::cout << "case 2: table is full\n";
             uint index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
