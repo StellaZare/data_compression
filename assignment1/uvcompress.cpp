@@ -72,7 +72,6 @@ class BitStream {
             for (int i = 0; i < 8; ++i) {
                 bitset[i] = stream[i];
             }
-            //std::cout << "Bitset: " << bitset.to_string() << std::endl;
 
             unsigned char byte = static_cast<unsigned char>(bitset.to_ulong());
             std::cout.put(byte);
@@ -107,31 +106,29 @@ int main(){
         if (symbolTable.contains(augmented)){
             working = augmented;
 
-        }else if (symbolTable.getNextIndex() >= std::pow(2, 16)){
+        }else if (symbolTable.getNextIndex() >= ( 1<< max_bits)){
+            //std::cout << "case 2: table is full\n";
             uint index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
-
-            // std::cout << "output: " << working << "\n";
 
             for (int idx = max_bits - num_bits; idx < max_bits; ++idx) {
                 stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
             }
             working = current;
-            
+
         }else{
             symbolTable.addSymbol(augmented);
             uint index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
 
-            // std::cout << "output: " << working << "\n";
             for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
                 stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
             }
 
             working = current;
-            if (symbolTable.getNextIndex() >= std::pow(2, num_bits)){
+            if (symbolTable.getNextIndex() > (1 << num_bits)){
                 ++num_bits;
             }
         }
@@ -142,7 +139,6 @@ int main(){
         std::bitset<max_bits> binary{index};
         std::string binaryString = binary.to_string();
 
-        // std::cout << "output: " << working << "\n";
         for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
             stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
         }
