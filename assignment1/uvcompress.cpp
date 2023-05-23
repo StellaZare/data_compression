@@ -34,9 +34,6 @@ class SymbolTable {
 
         uint32_t getSymbolIndex(const std::string& symbol) const {
             auto result = table_.at(symbol);
-            if(result >= 65536){
-                throw std::runtime_error("large index");
-            }
             return result;
         }
 
