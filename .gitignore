@@ -5,3 +5,4 @@ assignment1/uvcompress
 assignment1/*.Z
 .vscode
 assignment1/my_tests
+*.tar*
