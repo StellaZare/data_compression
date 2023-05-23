@@ -13,11 +13,12 @@
 #include <bitset>
 #include <vector>
 #include <cmath>
+#include <stdexcept>
 
 class SymbolTable {
     public:
         SymbolTable(){
-            for(int idx = 0; idx < 256; ++idx){
+            for(uint16_t idx = 0; idx < 256; ++idx){
                 table_[std::string(1,char(idx))] = idx;
             }
         }
@@ -31,19 +32,23 @@ class SymbolTable {
             return table_.find(symbol) != table_.end();
         }
 
-        uint16_t getSymbolIndex(const std::string& symbol) const {
-            return table_.at(symbol);
+        uint32_t getSymbolIndex(const std::string& symbol) const {
+            auto result = table_.at(symbol);
+            if(result >= 65536){
+                throw std::runtime_error("large index");
+            }
+            return result;
         }
 
-        uint16_t getNextIndex() const {
+        uint32_t getNextIndex() const {
             return next_idx_;
         }
 
     private:
         // next index to insert (256 reserved)
-        uint16_t next_idx_ {257};
+        uint32_t next_idx_ {257};
         // dictionary of (key: symbol , value: index)
-        std::unordered_map<std::string, int> table_;
+        std::unordered_map<std::string, uint16_t> table_;
 };
 
 class BitStream {
@@ -107,19 +112,19 @@ int main(){
         if (symbolTable.contains(augmented)){
             working = augmented;
 
-        }else if (symbolTable.getNextIndex() >= ( 1<< max_bits)){
-            uint index = symbolTable.getSymbolIndex(working);
+        }else if (symbolTable.getNextIndex() >= ( 1 << max_bits)){
+            uint32_t index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
 
-            for (int idx = max_bits - num_bits; idx < max_bits; ++idx) {
+            for (int idx = max_bits - 1; idx >= max_bits - num_bits; --idx) {
                 stream.addBit(binaryString[idx] == '1'); // Convert char '1'/'0' to bool
             }
             working = current;
 
         }else{
             symbolTable.addSymbol(augmented);
-            uint index = symbolTable.getSymbolIndex(working);
+            uint32_t index = symbolTable.getSymbolIndex(working);
             std::bitset<max_bits> binary{index};
             std::string binaryString = binary.to_string();
 
@@ -128,14 +133,14 @@ int main(){
             }
 
             working = current;
-            if (symbolTable.getNextIndex() > (1 << num_bits)){
+            if (symbolTable.getNextIndex() > (1U << num_bits)){
                 ++num_bits;
             }
         }
     }
 
     if(!working.empty()){
-        uint index = symbolTable.getSymbolIndex(working);
+        uint32_t index = symbolTable.getSymbolIndex(working);
         std::bitset<max_bits> binary{index};
         std::string binaryString = binary.to_string();
 
