@@ -1,8 +1,6 @@
-assignment1/*.pdf
-assignment1/test_data/*
-assignment1/*.txt
-assignment1/uvcompress
-assignment1/*.Z
+*.pdf
+test_data/
+my_tests/
+uvcompress/uvcompress
 .vscode
-assignment1/my_tests
 *.tar*
