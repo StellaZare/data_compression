@@ -1,0 +1,9 @@
+usage: gzstat.py [-h] [--no-headers] [--no-block-stats] [--print-block-codes]
+                 [--decode-blocks]
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --no-headers         Don't print gzip headers.
+  --no-block-stats     Don't print block stats.
+  --print-block-codes  Print code information for blocks of type 2.
+  --decode-blocks      Print full decoding information for each block.
