@@ -5,3 +5,4 @@ uvcompress/uvcompress
 .vscode
 *.tar*
 uvgz/uvgz
+build/
