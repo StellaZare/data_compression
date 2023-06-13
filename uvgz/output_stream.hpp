@@ -37,7 +37,7 @@ public:
             output_byte();
     }
 
-    /* Push an entire byte (8 bits) into the stream, with the least significant bit pushed first */
+    /* Push an entire byte into the stream, with the least significant bit pushed first */
     void push_byte(unsigned char b){
         push_bits(b,8);
     }
@@ -64,7 +64,7 @@ public:
         push_bits(i,16);
     }
 
-    /* Push the lowest order num_bits bits from b into the stream       <- distance offset 
+    /* Push the lowest order num_bits bits from b into the stream
        with the least significant bit pushed first
     */
     void push_bits(unsigned int b, unsigned int num_bits){

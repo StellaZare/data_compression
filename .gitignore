@@ -4,3 +4,4 @@ my_tests/
 uvcompress/uvcompress
 .vscode
 *.tar*
+uvgz/uvgz

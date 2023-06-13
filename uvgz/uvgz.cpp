@@ -95,8 +95,6 @@ int main(){
             }
         }
     }
-
-    
     //At this point, we've finished reading the input (no new characters remain), and we may have an incomplete block to write.
     if (block_size > 0){
         //Write out any leftover data

@@ -359,8 +359,8 @@ def decode_fixed(stream, output_buffer):
 
     if print_block_stats:
         print("        Decoding Block Type 01 (fixed codes):")
-    
-    # Mapping of code values (0 - 287) to (num_bits, code_bits) pairs
+
+    # Mapping of code values (0 - 287) to (num_bits, code_bits) pairs   
     ll_code = [0]*288
     for i in range(0, 144):
         ll_code[i] = (8, 0b00110000 + i)
