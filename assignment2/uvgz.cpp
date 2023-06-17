@@ -13,13 +13,16 @@
 #include <string>
 #include "output_stream.hpp"
 #include "prefix_codes.hpp"
+#include "LZSS.hpp"
 
 // To compute CRC32 values, we can use this library
 // from https://github.com/d-bahr/CRCpp
 #define CRCPP_USE_CPP11
 #include "CRC.h"
 
-void pushBlockType_0(OutputBitStream& stream, u32 block_size, std::array <u8, (1<<16)-1>& block_contents, u8 last_bit){
+const u32 buffer_size = (1<<16)-1;
+
+void pushBlockType_0(OutputBitStream& stream, u32 block_size, std::array <u8, buffer_size >& block_contents, u8 last_bit){
     //We know that there are more bytes left, so this is not the last block
     stream.push_bit(last_bit); 
     stream.push_bits(0, 2); //Two bit block type 0

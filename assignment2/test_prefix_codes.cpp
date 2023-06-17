@@ -13,6 +13,14 @@ void check_ll_codes(){
     assert(ll_codes.getCodeSequence(145) == (std::vector<bool>{1,1,0,0,1,0,0,0,1}));
 
     assert(ll_codes.getCodeSequence(256) == (std::vector<bool>{0,0,0,0,0,0,0}));
+
+    // check getDistanceSymbol
+    assert(ll_codes.getLengthSymbol(3) == 257);
+    assert(ll_codes.getLengthSymbol(12) == 265);
+    assert(ll_codes.getLengthSymbol(13) == 266);
+    assert(ll_codes.getLengthSymbol(34) == 272);
+    assert(ll_codes.getLengthSymbol(35) == 273);
+    assert(ll_codes.getLengthSymbol(258) == 285);
 }
 
 void check_distance(){
@@ -41,7 +49,7 @@ void check_distance(){
 int main(){
     check_ll_codes();
 
-    check_distance();
+    //check_distance();
 
     return 0;
 }

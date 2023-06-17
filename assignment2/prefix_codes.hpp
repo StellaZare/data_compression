@@ -31,8 +31,41 @@ class LLCodesBlock_1 {
         return code_sequence.at(symbol);
     }
 
+    /*
+        param: length symbol
+        return: number of offsets bits for the symbol
+    */
+    u32 getLengthOffset(u8 symbol) const {
+        return base_length.at(symbol-257).at(2);
+    }
+
+    /*
+        param: length of back reference
+        return: symbol corresponding to the distance
+    */
+    u32 getLengthSymbol (u32 distance){
+        u32 idx = 0;
+        while(base_length.at(idx).at(1) <= distance){
+            ++idx;
+        }
+        return idx-1;
+    }
+
     private:
     std::array < std::vector<bool>, 288> code_sequence {};
+
+    std::array < std::array< u32, 3> , 30> base_length {
+        {257, 3, 0},    {258, 4, 0},    {259, 5, 0},
+        {260, 6, 0},    {261, 7, 0},    {262, 8, 0},
+        {263, 9, 0},    {264, 10, 0},   {265, 11, 1},
+        {266, 13, 1},   {267, 15, 1},   {268, 17, 1},
+        {269, 19, 2},   {270, 23, 2},   {271, 27, 2},
+        {272, 31, 2},   {273, 35, 3},   {274, 43, 3},
+        {275, 51, 3},   {276, 59, 3},   {277, 67, 4},
+        {278, 83, 4},   {279, 99, 4},   {280, 115, 4},
+        {281, 131, 5},  {282, 163, 5},  {283, 195, 5},
+        {284, 227, 5},  {285, 258, 0}
+    };
 
     void create_sequence(u32 symbol, u32 num_bits, u32 code_bits){
         for(u32 idx = 0; idx < num_bits; ++idx){
