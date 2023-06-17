@@ -21,6 +21,20 @@ void check_ll_codes(){
     assert(ll_codes.getLengthSymbol(34) == 272);
     assert(ll_codes.getLengthSymbol(35) == 273);
     assert(ll_codes.getLengthSymbol(258) == 285);
+
+    // check getLegnthOffset
+    assert(ll_codes.getLengthOffset(257) == 0);
+    assert(ll_codes.getLengthOffset(265) == 1);
+    assert(ll_codes.getLengthOffset(272) == 2);
+    assert(ll_codes.getLengthOffset(273) == 3);
+    assert(ll_codes.getLengthOffset(285) == 0);
+
+    // check getBaseLength
+    assert(ll_codes.getBaseLength(3) == 3);
+    assert(ll_codes.getBaseLength(12) == 11);
+    assert(ll_codes.getBaseLength(28) == 27);
+    assert(ll_codes.getBaseLength(200) == 195);
+    assert(ll_codes.getBaseLength(258) == 258);
 }
 
 void check_distance(){

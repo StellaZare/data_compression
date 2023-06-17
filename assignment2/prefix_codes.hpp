@@ -35,7 +35,7 @@ class LLCodesBlock_1 {
         param: length symbol
         return: number of offsets bits for the symbol
     */
-    u32 getLengthOffset(u8 symbol) const {
+    u32 getLengthOffset(u32 symbol) const {
         return base_length.at(symbol-257).at(2);
     }
 
@@ -43,15 +43,30 @@ class LLCodesBlock_1 {
         param: length of back reference
         return: symbol corresponding to the distance
     */
-    u32 getLengthSymbol (u32 distance){
+    u32 getLengthSymbol (u32 length) const {
         u32 idx = 0;
-        if(distance == 258){
+        if(length == 258){
             return 285;
         }
-        while(base_length.at(idx).at(1) <= distance){
+        while(base_length.at(idx).at(1) <= length){
             ++idx;
         }
         return 257+idx-1;
+    }
+
+    /*
+        param: base length of lengt
+        return: symbol corresponding to the distance
+    */
+    u32 getBaseLength (u32 length) const {
+        u32 idx = 0;
+        if(length == 258){
+            return 258;
+        }
+        while(base_length.at(idx).at(1) <= length){
+            ++idx;
+        }
+        return base_length.at(idx-1).at(1);
     }
 
     private:
@@ -109,7 +124,7 @@ class DistanceCodesBlock_1 {
         param: distance of back reference
         return: symbol corresponding to the distance
     */
-    u32 getDistanceSymbol (u32 distance){
+    u32 getDistanceSymbol (u32 distance) const {
         u32 idx = 0;
         while(base_distance.at(idx) <= distance){
             ++idx;

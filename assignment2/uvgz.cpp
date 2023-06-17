@@ -12,7 +12,6 @@
 #include <unordered_map>
 #include <string>
 #include "output_stream.hpp"
-#include "prefix_codes.hpp"
 #include "LZSS.hpp"
 
 // To compute CRC32 values, we can use this library
