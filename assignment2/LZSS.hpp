@@ -26,10 +26,6 @@ class LZSSEncoder{
 
         while(bytes_processed < block_size){
             // find backreference
-            if(curr_symbol == 0){
-                stream.
-            }
-            for(uint idx = curr_symbol-1 ; )
 
             break;
         }

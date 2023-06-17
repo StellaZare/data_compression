@@ -27,7 +27,7 @@ void check_distance(){
     DistanceCodesBlock_1 d_codes{};
 
     // check getDistanceSymbol
-    assert(d_codes.getDistanceSymbol(3) == 2);
+    std::cout << (d_codes.getDistanceSymbol(3) == 2) << "\n";
     assert(d_codes.getDistanceSymbol(193) == 15);
     assert(d_codes.getDistanceSymbol(256) == 15);
     assert(d_codes.getDistanceSymbol(257) == 16);

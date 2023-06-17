@@ -45,16 +45,19 @@ class LLCodesBlock_1 {
     */
     u32 getLengthSymbol (u32 distance){
         u32 idx = 0;
+        if(distance == 258){
+            return 285;
+        }
         while(base_length.at(idx).at(1) <= distance){
             ++idx;
         }
-        return idx-1;
+        return 257+idx-1;
     }
 
     private:
     std::array < std::vector<bool>, 288> code_sequence {};
 
-    std::array < std::array< u32, 3> , 30> base_length {
+    std::array < std::array< u32, 3> , 30> base_length {{
         {257, 3, 0},    {258, 4, 0},    {259, 5, 0},
         {260, 6, 0},    {261, 7, 0},    {262, 8, 0},
         {263, 9, 0},    {264, 10, 0},   {265, 11, 1},
@@ -65,7 +68,7 @@ class LLCodesBlock_1 {
         {278, 83, 4},   {279, 99, 4},   {280, 115, 4},
         {281, 131, 5},  {282, 163, 5},  {283, 195, 5},
         {284, 227, 5},  {285, 258, 0}
-    };
+    }};
 
     void create_sequence(u32 symbol, u32 num_bits, u32 code_bits){
         for(u32 idx = 0; idx < num_bits; ++idx){
