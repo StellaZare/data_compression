@@ -43,7 +43,6 @@ int main(){
 
     OutputBitStream stream {std::cout};
     auto crc_table = CRC::CRC_32().MakeTable();
-    LZSSEncoder lzss_encoder {stream};
 
     //Push a basic gzip header
     stream.push_bytes( 0x1f, 0x8b, //Magic Number
@@ -53,7 +52,6 @@ int main(){
         0x00, //Extra flags
         0x03 //OS (Linux)
     );
-
     std::cerr << "pushed header bytes\n";
 
     //Note that the types u8, u16 and u32 are defined in the output_stream.hpp header
@@ -66,6 +64,7 @@ int main(){
 
     //Keep a running CRC of the data we read.
     u32 crc {};
+    LZSSEncoder lzss_encoder {stream};
 
     if (!std::cin.get(next_byte)){
         //Empty input?
@@ -101,15 +100,18 @@ int main(){
 
         //pushBlockType_0(stream, block_size, block_contents, 1);
         pushBlockType_1(lzss_encoder, stream, block_size, block_contents, 1);
-        stream.flush_to_byte();
+        
     }
 
     std::cerr << "pushing end of block\n";
     lzss_encoder.pushEOB();
+    stream.flush_to_byte();
 
     //Now close out the bitstream by writing the CRC and the total number of bytes stored.
     stream.push_u32(crc);
     stream.push_u32(bytes_read);
+
+    std::cerr << "crc " << crc << " bytes read " << bytes_read << "\n";
 
     return 0;
 }

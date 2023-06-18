@@ -109,7 +109,12 @@ class DistanceCodesBlock_1 {
         return: vector of 5 bits to represent the symbol
     */
     std::vector<bool> getCodeSequence(u32 symbol) const {
-        return code_sequence.at(symbol);
+        try{
+            return code_sequence.at(symbol);
+        }catch(...){
+            std::cerr << "getCodeSequence" << symbol << "\n";
+            exit(1);
+        }
     }
 
     /*
@@ -117,7 +122,12 @@ class DistanceCodesBlock_1 {
         return: number of offsets bits for the symbol
     */
     u32 getNumOffset(u8 symbol) const {
-        return offset_bits.at(symbol);
+        try{
+            return offset_bits.at(symbol);
+        }catch(...){
+            std::cerr << "getNumOffset" << symbol << "\n";
+            exit(1);
+        }
     }
 
     /*
