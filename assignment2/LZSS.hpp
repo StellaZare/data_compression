@@ -11,11 +11,14 @@
 class LZSSEncoder{
     public:
 
-    LZSSEncoder(OutputBitStream& stream){}
+    LZSSEncoder(OutputBitStream& input_stream) : stream{input_stream} {
+        stream.push_bit(1); 
+        stream.push_bits(1, 2); //Two bit block type 
+    }
 
     static const u32 block_contents_size = (1<<16)-1;
 
-    void encodeBlock(OutputBitStream& stream, std::array <u8, block_contents_size >& block_contents, const u32& block_size){
+    void encodeBlock(std::array <u8, block_contents_size >& block_contents, const u32& block_size){
         u32 bytes_processed = 0;
 
         // first block -> fill look ahead
@@ -25,27 +28,43 @@ class LZSSEncoder{
             }
         }
 
+        for(int idx = 0; idx < lookahead_idx; ++idx){
+            std::cerr << buff.at(idx) << " ";
+        }
+
+        bytes_processed = 0;
         while(bytes_processed < block_size){
             // push first 3 literals
             while(curr_idx < 3){
-                pushLiteral(stream, block_contents.at(bytes_processed++));
+                std::cerr << block_contents.at(bytes_processed) <<"\n";
+                pushLiteral(block_contents.at(bytes_processed));
+                ++bytes_processed;
                 ++curr_idx;
             }
 
-            // look for back reference
+            // look for back reference [length, distance]
             std::array <u32, 2> back_ref = getBackRef();
             if(back_ref.at(0) == 0 && back_ref.at(1) == 0){
                 // none found
-                pushLiteral(stream, block_contents.at(bytes_processed++));
+                std::cerr << block_contents.at(bytes_processed) <<"\n";
+                pushLiteral(block_contents.at(bytes_processed++));
                 ++curr_idx;
             }else{
                 // back ref found
-                pushLengthDistance(stream, back_ref);
+                std::cerr << back_ref.at(0) << ":" << back_ref.at(1) <<"\n";
+                pushLengthDistance(back_ref);
+                curr_idx += back_ref.at(0);
+                bytes_processed += back_ref.at(0);
             }
-
-            break;
         }
     }  
+
+    void pushEOB(){
+        std::vector<bool> EOB = ll_codes.getCodeSequence(256);
+        for(auto bit : EOB){
+            stream.push_bit(bit);
+        }
+    }
 
     private:
     const u32 lookahead_distance {256};
@@ -59,13 +78,31 @@ class LZSSEncoder{
 
     LLCodesBlock_1 ll_codes {};
     DistanceCodesBlock_1 distance_codes {};
+    OutputBitStream& stream;
 
-    void pushLengthDistance(OutputBitStream& stream, const std::array <u32, 2>& back_ref){
+    void pushLengthDistance(const std::array <u32, 2>& back_ref){
         u32 length_symbol = ll_codes.getLengthSymbol(back_ref.at(0));
-        
+        u32 base_length = ll_codes.getBaseLength(back_ref.at(0));
+        u32 length_offset = ll_codes.getLengthOffset(length_symbol);
+
+        for(u8 bit : ll_codes.getCodeSequence(length_symbol)){
+            stream.push_bit(bit);
+        }
+
+        stream.push_bits(back_ref.at(0) - base_length, length_offset);
+
+        u32 distance_symbol = distance_codes.getDistanceSymbol(back_ref.at(1));
+        u32 base_distance = distance_codes.getBaseDistance(back_ref.at(1));
+        u32 distance_offset = distance_codes.getNumOffset(distance_symbol);
+
+        for(u8 bit : distance_codes.getCodeSequence(distance_symbol)){
+            stream.push_bit(bit);
+        }
+
+        stream.push_bits(back_ref.at(0) - base_distance, distance_offset);
     }
 
-    void pushLiteral(OutputBitStream& stream, u8 literal){
+    void pushLiteral(u8 literal){
         std::vector<bool> seq = ll_codes.getCodeSequence(literal);
         for(u32 bit : seq){
             stream.push_bit(bit);
@@ -76,8 +113,8 @@ class LZSSEncoder{
         u32 max_match_length {0};
         u32 max_match_distance {0};
         u32 match_length = {0};
-
-        for(std::size_t check_idx = curr_idx-1; check_idx <= history_idx; --check_idx){
+        for(int check_idx = curr_idx-1; check_idx >= int(history_idx); --check_idx){
+            
             if(buff.at(check_idx %buff_size) == buff.at(curr_idx %buff_size) &&
                buff.at(check_idx+1 %buff_size) == buff.at(curr_idx+1 %buff_size) &&
                buff.at(check_idx+2 %buff_size) == buff.at(curr_idx+2 %buff_size)){

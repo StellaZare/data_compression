@@ -1,0 +1,29 @@
+pushed header bytes
+pushing incomplete block
+A   S A L A D ;   A   S A L S A   ; push 1st literals A
+push 1st literals  
+push 1st literals S
+current 3 history 0 
+check back ref 0:0
+current 4 history 0 
+check back ref 0:0
+current 5 history 0 
+check back ref 0:0
+current 6 history 0 
+check back ref 0:0
+current 7 history 0 
+check back ref 0:0
+current 8 history 0 
+check back ref 0:0
+current 9 history 0 
+in get match length9
+check back ref 5:5
+current 14 history 0 
+check back ref 0:0
+current 15 history 0 
+check back ref 0:0
+current 16 history 0 
+check back ref 0:0
+current 17 history 0 
+check back ref 0:0
+pushing end of block

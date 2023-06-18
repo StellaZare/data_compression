@@ -58,12 +58,17 @@ void check_distance(){
 
     assert(d_codes.getCodeSequence(3) == (std::vector<bool>{0,0,0,1,1}));
 
+    // check getBasedDistance
+    assert(d_codes.getBaseDistance(2) == 2);
+    assert(d_codes.getBaseDistance(15) == 13);
+    assert(d_codes.getBaseDistance(200) == 193);
+    assert(d_codes.getBaseDistance(3000) == 2049);
 }
 
 int main(){
-    check_ll_codes();
+    //check_ll_codes();
 
-    //check_distance();
+    check_distance();
 
     return 0;
 }

@@ -132,6 +132,18 @@ class DistanceCodesBlock_1 {
         return idx-1;
     }
 
+    /*
+        param: distance of back reference
+        return: base distance 
+    */
+    u32 getBaseDistance (u32 distance) const {
+        u32 idx = 0;
+        while(base_distance.at(idx) <= distance){
+            ++idx;
+        }
+        return base_distance.at(idx-1);
+    }
+
     private:
     std::array < std::vector<bool>, 30> code_sequence {};
     

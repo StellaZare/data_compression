@@ -35,28 +35,15 @@ void pushBlockType_0(OutputBitStream& stream, u32 block_size, std::array <u8, bu
         stream.push_byte(block_contents.at(i)); //Interesting optimization question: Will the compiler optimize away the bounds checking for .at here?
 }
 
-void pushBlockType_1(const LLCodesBlock_1& ll_codes, OutputBitStream& stream, u32 block_size, std::array <u8, (1<<16)-1>& block_contents, u8 last_bit){  
-    stream.push_bit(last_bit); 
-    stream.push_bits(1, 2); //Two bit block type 
-
-    for(unsigned int i = 0; i < block_size; i++){
-        std::vector<bool> encoding = ll_codes.getCodeSequence(block_contents.at(i));
-        for(auto bit : encoding){
-            stream.push_bit(bit);
-        }
-    }
-
-    std::vector<bool> EOB = ll_codes.getCodeSequence(256);
-    for(auto bit : EOB){
-        stream.push_bit(bit);
-    }
+void pushBlockType_1(LZSSEncoder& lzss_encoder , OutputBitStream& stream, u32 block_size, std::array <u8, (1<<16)-1>& block_contents, u8 last_bit){  
+    lzss_encoder.encodeBlock(block_contents, block_size);
 }
 
 int main(){
 
     OutputBitStream stream {std::cout};
     auto crc_table = CRC::CRC_32().MakeTable();
-    LLCodesBlock_1 ll_codes_1 {};
+    LZSSEncoder lzss_encoder {stream};
 
     //Push a basic gzip header
     stream.push_bytes( 0x1f, 0x8b, //Magic Number
@@ -66,6 +53,8 @@ int main(){
         0x00, //Extra flags
         0x03 //OS (Linux)
     );
+
+    std::cerr << "pushed header bytes\n";
 
     //Note that the types u8, u16 and u32 are defined in the output_stream.hpp header
     const u32 buffer_size = (1<<16)-1;
@@ -98,19 +87,25 @@ int main(){
 
             //If we get to this point, we just added a byte to the block AND there is at least one more byte in the input waiting to be written.
             if (block_size == block_contents.size()){
+                std::cerr << "pushing full block\n";
+
                 //pushBlockType_0(stream, block_size, block_contents, 0);
-                pushBlockType_1(ll_codes_1, stream, block_size, block_contents, 0);
+                pushBlockType_1(lzss_encoder, stream, block_size, block_contents, 1);
                 block_size = 0;
             }
         }
     }
     //At this point, we've finished reading the input (no new characters remain), and we may have an incomplete block to write.
     if (block_size > 0){
+        std::cerr << "pushing incomplete block\n";
+
         //pushBlockType_0(stream, block_size, block_contents, 1);
-        pushBlockType_1(ll_codes_1, stream, block_size, block_contents, 1);
-        
+        pushBlockType_1(lzss_encoder, stream, block_size, block_contents, 1);
         stream.flush_to_byte();
     }
+
+    std::cerr << "pushing end of block\n";
+    lzss_encoder.pushEOB();
 
     //Now close out the bitstream by writing the CRC and the total number of bytes stored.
     stream.push_u32(crc);
