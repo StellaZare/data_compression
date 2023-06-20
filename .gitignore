@@ -6,3 +6,4 @@ uvcompress/uvcompress
 *.tar*
 uvgz/uvgz
 build/
+report*.txt
