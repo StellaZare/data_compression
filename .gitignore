@@ -6,4 +6,4 @@ uvcompress/uvcompress
 *.tar*
 uvgz/uvgz
 build/
-archive/
+
