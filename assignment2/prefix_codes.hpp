@@ -121,7 +121,7 @@ class DistanceCodesBlock_1 {
         param: distance symbol
         return: number of offsets bits for the symbol
     */
-    u32 getNumOffset(u8 symbol) const {
+    u32 getNumOffset(u32 symbol) const {
         try{
             return offset_bits.at(symbol);
         }catch(...){
