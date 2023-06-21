@@ -28,7 +28,7 @@ class LZSSEncoder{
             std::array <u32, 2> back_ref = getBackRef();
             if(back_ref.at(0) == 0 && back_ref.at(1) == 0){
                 // none found
-                pushLiteral(buff.at(curr_idx%buff_size));
+                pushLiteral(buffer.at(curr_idx%buffer_size));
                 ++curr_idx;
                 fillLookahead(block_contents, block_size);
 
@@ -38,7 +38,7 @@ class LZSSEncoder{
                 curr_idx += back_ref.at(0);
                 fillLookahead(block_contents, block_size, back_ref.at(0));
             }
-            if(bytes_processed >= buff_size){
+            if(bytes_processed >= buffer_size){
                 history_idx = bytes_processed;
             }
         }
@@ -53,10 +53,10 @@ class LZSSEncoder{
     }
 
     private:
-    const u32 lookahead_distance {20};
-    static const u32 buff_size {50};
+    const u32 lookahead_distance {258};
+    static const u32 buffer_size {5000};
 
-    std::array <u8, buff_size> buff {};
+    std::array <u8, buffer_size> buffer {};
     // std::array <u8, 256> last_seen{};
     std::size_t history_idx {0};
     std::size_t curr_idx {0};
@@ -68,7 +68,7 @@ class LZSSEncoder{
 
     void fillLookahead(std::array <u8, block_contents_size >& block_contents,const u32& block_size, u32 num_elements = 1){
         for(u32 num = 0; num < num_elements && bytes_processed < block_size; ++num){
-            buff.at(bytes_processed %buff_size) = block_contents.at(bytes_processed);
+            buffer.at(bytes_processed %buffer_size) = block_contents.at(bytes_processed);
             ++bytes_processed;
         }
     }
@@ -108,9 +108,9 @@ class LZSSEncoder{
         u32 max_match_distance {0};
         u32 match_length = {0};
         for(int check_idx = (curr_idx-1); check_idx >= int(history_idx); --check_idx){
-            if(buff.at(check_idx %buff_size) == buff.at(curr_idx %buff_size) &&
-               buff.at((check_idx+1) %buff_size) == buff.at((curr_idx+1) %buff_size) &&
-               buff.at((check_idx+2) %buff_size) == buff.at((curr_idx+2) %buff_size)){
+            if(buffer.at(check_idx %buffer_size) == buffer.at(curr_idx %buffer_size) &&
+               buffer.at((check_idx+1) %buffer_size) == buffer.at((curr_idx+1) %buffer_size) &&
+               buffer.at((check_idx+2) %buffer_size) == buffer.at((curr_idx+2) %buffer_size)){
 
                 match_length = getMatchLength(check_idx);
                 if(match_length > max_match_length){
@@ -125,7 +125,7 @@ class LZSSEncoder{
 
     u32 getMatchLength(std::size_t check_idx){
         u32 length {0};
-        while(buff.at((check_idx+length) %buff_size) == buff.at((curr_idx+length) %buff_size) && curr_idx + length < bytes_processed){
+        while(buffer.at((check_idx+length) %buffer_size) == buffer.at((curr_idx+length) %buffer_size) && curr_idx + length < bytes_processed){
             ++length;
         }
         return length;
