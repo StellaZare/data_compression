@@ -1,0 +1,13 @@
+It was the best of times, it t length: 0 curr idx: 27 length: 0 lookahead: 47
+    length: 1 curr idx: 27 length: 1 lookahead: 47
+w w length: 2 curr idx: 27 length: 2 lookahead: 47
+a a length: 3 curr idx: 27 length: 3 lookahead: 47
+s s length: 4 curr idx: 27 length: 4 lookahead: 47
+    length: 5 curr idx: 27 length: 5 lookahead: 47
+t t length: 6 curr idx: 27 length: 6 lookahead: 47
+h h length: 7 curr idx: 27 length: 7 lookahead: 47
+e e length: 8 curr idx: 27 length: 8 lookahead: 47
+    length: 9 curr idx: 27 length: 9 lookahead: 47
+10:26worst of times, 
+it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, 
+it was the epoch of incredulity,crc 2304215160 - bytes 174

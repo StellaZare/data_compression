@@ -65,10 +65,21 @@ void check_distance(){
     assert(d_codes.getBaseDistance(3000) == 2049);
 }
 
+void check_error(){
+    DistanceCodesBlock_1 d_codes{};
+
+    std::cerr << "get symbol for 21: " << d_codes.getDistanceSymbol(21) << "\n";
+    std::cerr << "get base for 21: " << d_codes.getBaseDistance(21) << "\n";
+    std::cerr << "get num offset 21: " << d_codes.getNumOffset(8) << "\n";
+    
+}
+
 int main(){
     //check_ll_codes();
 
-    check_distance();
+    //check_distance();
+
+    check_error();
 
     return 0;
 }
