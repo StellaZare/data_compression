@@ -7,7 +7,7 @@
 #define CRCPP_USE_CPP11
 #include "CRC.h"
 
-const u32 buffer_size = (1<<16)-1;
+const u32 b1_size = (1<<16)-1;
 
 class TypeOneEncoder {
     public:
@@ -17,7 +17,7 @@ class TypeOneEncoder {
         Encodes block type 1 by calling the LZSSEncoder_2 class on the block contents
         then decomposes the Code vector returned and pushes bits to the stream
     */
-    void Encode(OutputBitStream& stream, u32 block_size, std::array <u8, buffer_size>& block_contents, bool is_last){
+    void Encode(OutputBitStream& stream, u32 block_size, std::array <u8, b1_size>& block_contents, bool is_last){
         pushBlockHeader(stream, is_last);
 
         LZSSEncoder_2 lzss {};

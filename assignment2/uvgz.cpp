@@ -12,6 +12,8 @@
 #define CRCPP_USE_CPP11
 #include "CRC.h"
 
+static const u32 bc_size {(1<<16)-1};
+
 /* ----- Helper Functions ----- */
 void pushFileHeader(OutputBitStream& stream){
     stream.push_bytes( 0x1f, 0x8b, //Magic Number
@@ -29,12 +31,12 @@ void pushFileFooter(OutputBitStream& stream, u32 crc, u32 bytes_read){
     stream.push_u32(bytes_read);
 }
 
-void encodeTypeOne(OutputBitStream& stream, u32 block_size, std::array <u8, buffer_size>& block_contents, bool is_last){
+void encodeTypeOne(OutputBitStream& stream, u32 block_size, std::array <u8, bc_size>& block_contents, bool is_last){
     TypeOneEncoder encoder {};
     encoder.Encode(stream, block_size, block_contents, is_last);
 }
 
-void encodeTypeTwo(OutputBitStream& stream, u32 block_size, std::array <u8, buffer_size>& block_contents, bool is_last){
+void encodeTypeTwo(OutputBitStream& stream, u32 block_size, std::array <u8, bc_size>& block_contents, bool is_last){
     TypeTwoEncoder encoder {};
     encoder.Encode(stream, block_size, block_contents, is_last);
 }
@@ -47,7 +49,7 @@ int main(){
     OutputBitStream stream {std::cout};
     pushFileHeader(stream);
 
-    std::array< u8, buffer_size > block_contents {};
+    std::array< u8, bc_size > block_contents {};
     u32 block_size {0};
     u32 bytes_read {0};
     char next_byte {};
@@ -67,7 +69,7 @@ int main(){
             crc = CRC::Calculate(&next_byte,1, crc_table, crc); 
             
             if (block_size == block_contents.size()){
-                encodeTypeOne(stream, block_size, block_contents, 0);
+                //encodeTypeOne(stream, block_size, block_contents, 0);
                 encodeTypeTwo(stream, block_size, block_contents, 0);
                 block_size = 0;
             }
@@ -75,7 +77,7 @@ int main(){
     }
     
     if (block_size > 0){
-        encodeTypeOne(stream, block_size, block_contents, 1); 
+        //encodeTypeOne(stream, block_size, block_contents, 1); 
         encodeTypeTwo(stream, block_size, block_contents, 1);      
     }
 
