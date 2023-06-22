@@ -1,3 +1,6 @@
+#ifndef PREFIX_CODES_H
+#define PREFIX_CODES_H
+
 #include "output_stream.hpp"
 #include <iostream>
 #include <unordered_map>
@@ -178,3 +181,6 @@ class DistanceCodesBlock_1 {
     }
 
 };
+
+
+#endif

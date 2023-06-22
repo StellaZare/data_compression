@@ -1,7 +1,12 @@
+#ifndef LZSSENCODER_H
+#define LZSSENCODER_H
+
+
 #include <array>
 #include <vector>
 #include <cstdint>
 #include <algorithm>
+#include "prefix_codes.hpp"
 
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
@@ -129,3 +134,5 @@ class LZSSEncoder_2 {
     }
 
 };
+
+#endif

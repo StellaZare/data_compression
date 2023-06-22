@@ -5,6 +5,7 @@
 #include <string>
 #include "output_stream.hpp"
 #include "TypeOneEncoder.hpp"
+#include "TypeTwoEncoder.hpp"
 
 // To compute CRC32 values, we can use this library
 // from https://github.com/d-bahr/CRCpp
@@ -30,6 +31,11 @@ void pushFileFooter(OutputBitStream& stream, u32 crc, u32 bytes_read){
 
 void encodeTypeOne(OutputBitStream& stream, u32 block_size, std::array <u8, buffer_size>& block_contents, bool is_last){
     TypeOneEncoder encoder {};
+    encoder.Encode(stream, block_size, block_contents, is_last);
+}
+
+void encodeTypeTwo(OutputBitStream& stream, u32 block_size, std::array <u8, buffer_size>& block_contents, bool is_last){
+    TypeTwoEncoder encoder {};
     encoder.Encode(stream, block_size, block_contents, is_last);
 }
 
@@ -62,13 +68,15 @@ int main(){
             
             if (block_size == block_contents.size()){
                 encodeTypeOne(stream, block_size, block_contents, 0);
+                encodeTypeTwo(stream, block_size, block_contents, 0);
                 block_size = 0;
             }
         }
     }
     
     if (block_size > 0){
-        encodeTypeOne(stream, block_size, block_contents, 1);        
+        encodeTypeOne(stream, block_size, block_contents, 1); 
+        encodeTypeTwo(stream, block_size, block_contents, 1);      
     }
 
     pushFileFooter(stream, crc, bytes_read);

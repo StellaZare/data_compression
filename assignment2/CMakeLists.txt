@@ -5,4 +5,5 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra")
 
 add_executable(test_prefix_codes test_prefix_codes.cpp)
+add_executable(TestTypeTwo TestTypeTwo.cpp)
 add_executable(uvgz uvgz.cpp)
