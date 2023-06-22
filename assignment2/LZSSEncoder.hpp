@@ -36,12 +36,14 @@ class LZSSEncoder_2 {
             std::array <u32, 2> back_ref = getBackRef();    // returns {length, distance}
             if(back_ref.at(0) == 0 && back_ref.at(1) == 0){
                 // none found
+                std::cerr << buffer.at(curr_idx%buffer_size) << std::endl;
                 addLiteral(buffer.at(curr_idx%buffer_size));
                 ++curr_idx;
                 fillLookahead(block_contents, block_size);
 
             }else{
                 // back ref found
+                std::cerr << back_ref.at(0) << ":" << back_ref.at(1) << std::endl;
                 addLengthDistancePair(back_ref);
                 curr_idx += back_ref.at(0);
                 fillLookahead(block_contents, block_size, back_ref.at(0));

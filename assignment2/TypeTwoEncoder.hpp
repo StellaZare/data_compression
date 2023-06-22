@@ -18,7 +18,6 @@ class TypeTwoEncoder{
         // Encode block w LZSS
         LZSSEncoder_2 lzss {};
         const std::vector<Code>& result = lzss.Encode(block_size, block_contents);
-
         // get symbol counts
         for(const Code& curr : result){
             if(curr.code_type == 1){
@@ -33,11 +32,13 @@ class TypeTwoEncoder{
             else{
                 std::cerr << "invalid code type in result" << std::endl;
             }
+            // count EOB 
+            LLCount.at(256) = 1;
         }
 
         // get code
-        printLLCount();
-        printDistanceCount();
+        //printLLCount();
+        //printDistanceCount();
     }
 
     private:
@@ -65,7 +66,7 @@ class TypeTwoEncoder{
     }
     void printDistanceCount(){
         for(u32 idx = 0; idx < 30; ++idx){
-            std::cerr << "[" << idx << ", " << LLCount.at(idx) << "]"<< std::endl;
+            std::cerr << "[" << idx << ", " << DistanceCount.at(idx) << "]"<< std::endl;
         }
     }
 };
