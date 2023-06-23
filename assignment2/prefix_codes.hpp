@@ -9,6 +9,8 @@
 #include <vector>
 #include <cmath>
 #include <stdexcept>
+#include <cassert>
+#include <algorithm>
 
 class LLCodesBlock_1 {
 
@@ -181,6 +183,158 @@ class DistanceCodesBlock_1 {
     }
 
 };
+
+class DynamicCodes {
+    public:
+    DynamicCodes(const std::vector<u32>& input_length_table) : length_table{input_length_table} {
+        symbol_encoding = construct_canonical_code(length_table);
+    }
+
+    std::vector<bool> getCodeSequence(u32 symbol) const{
+        std::vector <bool> code_sequence {};
+        u32 num_bits {length_table.at(symbol)};
+        u32 code_bits {symbol_encoding.at(symbol)};
+        for(u32 idx = 0; idx < num_bits; ++idx){
+            code_sequence.push_back(code_bits >> (num_bits - idx - 1) & 1);
+        }
+        std::cerr << "symbol: " << symbol << " " << num_bits << " " << code_bits << std::endl;
+        return code_sequence;
+    }
+
+    private:
+    std::vector <u32> length_table {};
+    std::vector <u32> symbol_encoding {};
+
+    //Given a vector of lengths where lengths.at(i) is the code length for symbol i,
+    //returns a vector V of unsigned int values, such that the lower lengths.at(i) bits of V.at(i)
+    //comprise the bit encoding for symbol i (using the encoding construction given in RFC 1951). Note that the encoding is in 
+    //MSB -> LSB order (that is, the first bit of the prefix code is bit number lengths.at(i) - 1 and the last bit is bit number 0).
+    //The codes for symbols with length zero are undefined.
+    std::vector< u32 > construct_canonical_code( std::vector<u32> const & lengths ){
+
+        unsigned int size = lengths.size();
+        std::vector< unsigned int > length_counts(16,0); //Lengths must be less than 16 for DEFLATE
+        u32 max_length = 0;
+        for(auto i: lengths){
+            assert(i <= 15);
+            length_counts.at(i)++;
+            max_length = std::max(i, max_length);
+        }
+        length_counts[0] = 0; //Disregard any codes with alleged zero length
+
+        std::vector< u32 > result_codes(size,0);
+
+        //The algorithm below follows the pseudocode in RFC 1951
+        std::vector< unsigned int > next_code(size,0);
+        {
+            //Step 1: Determine the first code for each length
+            unsigned int code = 0;
+            for(unsigned int i = 1; i <= max_length; i++){
+                code = (code+length_counts.at(i-1))<<1;
+                next_code.at(i) = code;
+            }
+        }
+        {
+            //Step 2: Assign the code for each symbol, with codes of the same length being
+            //        consecutive and ordered lexicographically by the symbol to which they are assigned.
+            for(unsigned int symbol = 0; symbol < size; symbol++){
+                unsigned int length = lengths.at(symbol);
+                if (length > 0)
+                    result_codes.at(symbol) = next_code.at(length)++;
+            }  
+        } 
+        return result_codes;
+    }
+
+};
+
+class PackageMerge {
+    public:
+
+    PackageMerge () {};
+    
+    std::vector<u32> getSymbolLengths(std::vector < std::pair <std::vector<u32>, double> > probabilities) {
+        u32 m = probabilities.size();
+        // printProbabilities(probabilities);
+        // std::cerr << " ------- " << std::endl;
+
+        // while there are not sufficient packages
+        while(probabilities.size() < (2*m)-2){
+            // sort with increasing probabilities
+            sort(probabilities.begin(), probabilities.end(), sortByProb);
+            // if odd number of packages -> discard last
+            if(probabilities.size()%2 != 0 && probabilities.at(probabilities.size()-1).first.size() > 1){
+                probabilities.pop_back();
+            }
+            u32 current_size = probabilities.size();
+            for(u32 idx = 0; idx <  current_size; idx += 2){
+                // create package
+                std::vector<u32> v {};
+                appendVectors(v, probabilities.at(idx).first, probabilities.at(idx+1).first);
+                double prob = probabilities.at(idx).second + probabilities.at(idx+1).second;
+                // merge
+                probabilities.push_back({v, prob});
+            }
+
+            // printProbabilities(probabilities);
+            // std::cerr << " ------- " << std::endl;
+        }
+        std::vector<u32> lengths_table {};
+        for(u32 symbol = 0; symbol < 288; ++symbol){
+            lengths_table.push_back(countOccurances(probabilities, symbol));
+        }
+
+        // printLengths(lengths_table);
+
+        return lengths_table;
+    }
+
+    private:
+
+    static bool sortByProb(const std::pair <std::vector<u32>, double> &a, const std::pair <std::vector<u32>, double> &b){
+        return (a.second < b.second);
+    }
+
+    void printProbabilities(std::vector < std::pair <std::vector<u32>, double> >& probabilities){
+        for (const auto& pair : probabilities) {
+            std::cout << "Literal: ";
+            for (const auto& symbol : pair.first) {
+                std::cout << symbol << " ";
+            }
+            std::cout << "prob: " << pair.second << std::endl;
+        }
+    }
+
+    void appendVectors(std::vector<u32>& dest, const std::vector<u32>& src1, const std::vector<u32>& src2){
+        for(const u32 item : src1){
+            dest.push_back(item);
+        }
+        for(const u32 item : src2){
+            dest.push_back(item);
+        }
+    }
+
+    u32 countOccurances(std::vector < std::pair <std::vector<u32>, double> >& probabilities, u32 symbol){
+        u32 count {0};
+        for (const auto& pair : probabilities){         // traverse properties vector
+            for (const auto& curr_symbol : pair.first) {     // traverse set of symbol
+                if (curr_symbol == symbol){
+                    ++count;
+                }
+            }
+        }
+        return count;
+    }
+
+    void printLengths(const std::vector<u32>& lengths_table){
+        for(u32 symbol = 0; symbol < lengths_table.size(); ++symbol){
+            std::cerr << symbol << "-" << lengths_table.at(symbol) << std::endl;
+        }
+    }
+};
+
+
+
 
 
 #endif
