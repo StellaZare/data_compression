@@ -197,7 +197,6 @@ class DynamicCodes {
         for(u32 idx = 0; idx < num_bits; ++idx){
             code_sequence.push_back(code_bits >> (num_bits - idx - 1) & 1);
         }
-        std::cerr << "symbol: " << symbol << " " << num_bits << " " << code_bits << std::endl;
         return code_sequence;
     }
 
@@ -253,35 +252,42 @@ class PackageMerge {
 
     PackageMerge () {};
     
-    std::vector<u32> getSymbolLengths(std::vector < std::pair <std::vector<u32>, double> > probabilities) {
+    std::vector<u32> getSymbolLengths(const std::vector < std::pair <std::vector<u32>, double> > probabilities, u32 num_symbols) {
         u32 m = probabilities.size();
-        // printProbabilities(probabilities);
-        // std::cerr << " ------- " << std::endl;
 
-        // while there are not sufficient packages
-        while(probabilities.size() < (2*m)-2){
+        std::vector < std::pair <std::vector<u32>, double> > current {probabilities};
+        while(current.size() < (2*m)-2){
             // sort with increasing probabilities
-            sort(probabilities.begin(), probabilities.end(), sortByProb);
-            // if odd number of packages -> discard last
-            if(probabilities.size()%2 != 0 && probabilities.at(probabilities.size()-1).first.size() > 1){
-                probabilities.pop_back();
+            sort(current.begin(), current.end(), sortByProb);
+            // std::cerr << "---- sort ----" << std::endl;
+            // printPairVector(current);
+
+            // if odd number of packages -> discard last (if it not one of the original packages)
+            if(current.size()%2 != 0 && current.at(current.size()-1).first.size() > 1){
+                current.pop_back();
             }
-            u32 current_size = probabilities.size();
-            for(u32 idx = 0; idx <  current_size; idx += 2){
+            std::vector < std::pair <std::vector<u32>, double> > packages {};
+            for(u32 idx = 0; idx < current.size()-1; idx += 2){
                 // create package
                 std::vector<u32> v {};
-                appendVectors(v, probabilities.at(idx).first, probabilities.at(idx+1).first);
-                double prob = probabilities.at(idx).second + probabilities.at(idx+1).second;
+                appendVectors(v, current.at(idx).first, current.at(idx+1).first);
+                double prob = current.at(idx).second + current.at(idx+1).second;
                 // merge
-                probabilities.push_back({v, prob});
+                packages.push_back({v, prob});
             }
+            // std::cerr << "---- packages ----" << std::endl;
+            // printPairVector(packages);
 
-            // printProbabilities(probabilities);
-            // std::cerr << " ------- " << std::endl;
+            current.clear();
+            appendVectors(current, probabilities, packages);
+            
+            // std::cerr << "---- done ----" << std::endl;
+            // printPairVector(current);
         }
+
         std::vector<u32> lengths_table {};
-        for(u32 symbol = 0; symbol < 288; ++symbol){
-            lengths_table.push_back(countOccurances(probabilities, symbol));
+        for(u32 symbol = 0; symbol < num_symbols; ++symbol){
+            lengths_table.push_back(countOccurances(current, symbol));
         }
 
         // printLengths(lengths_table);
@@ -295,23 +301,21 @@ class PackageMerge {
         return (a.second < b.second);
     }
 
-    void printProbabilities(std::vector < std::pair <std::vector<u32>, double> >& probabilities){
-        for (const auto& pair : probabilities) {
-            std::cout << "Literal: ";
+    void printPairVector(std::vector < std::pair <std::vector<u32>, double> >& v){
+        std::cerr << v.size()<< std::endl;
+        for (const auto& pair : v) {
+            std::cerr << "symbol: ";
             for (const auto& symbol : pair.first) {
-                std::cout << symbol << " ";
+                std::cerr << symbol << " ";
             }
-            std::cout << "prob: " << pair.second << std::endl;
+            std::cerr << "prob: " << pair.second << std::endl;
         }
     }
 
-    void appendVectors(std::vector<u32>& dest, const std::vector<u32>& src1, const std::vector<u32>& src2){
-        for(const u32 item : src1){
-            dest.push_back(item);
-        }
-        for(const u32 item : src2){
-            dest.push_back(item);
-        }
+    template<typename T>
+    void appendVectors(std::vector<T>& dest, const std::vector<T>& src1, const std::vector<T>& src2) {
+        dest.insert(dest.end(), src1.begin(), src1.end());
+        dest.insert(dest.end(), src2.begin(), src2.end());
     }
 
     u32 countOccurances(std::vector < std::pair <std::vector<u32>, double> >& probabilities, u32 symbol){
@@ -327,6 +331,7 @@ class PackageMerge {
     }
 
     void printLengths(const std::vector<u32>& lengths_table){
+        std::cerr << "lengths table: " << std::endl;
         for(u32 symbol = 0; symbol < lengths_table.size(); ++symbol){
             std::cerr << symbol << "-" << lengths_table.at(symbol) << std::endl;
         }

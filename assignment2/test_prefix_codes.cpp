@@ -74,12 +74,29 @@ void check_error(){
     
 }
 
+void check_package_merge(){
+    std::vector < std::pair <std::vector<u32>, double> > input {};
+
+    input.push_back({{1}, 0.11});
+    input.push_back({{2}, 0.15});
+    input.push_back({{3}, 0.45});
+    input.push_back({{4}, 0.08});
+    input.push_back({{5}, 0.01});
+    input.push_back({{6}, 0.20});
+
+    PackageMerge pm {};
+    pm.getSymbolLengths(input, 6);
+
+}
+
 int main(){
     //check_ll_codes();
 
     //check_distance();
 
-    check_error();
+    //check_error();
+    
+    check_package_merge();
 
     return 0;
 }
