@@ -9,7 +9,7 @@
 #include "CRC.h"
 
 static const u32 b2_size {(1<<16)-1};
-static const u32 LL_size {288};
+static const u32 LL_size {286};
 static const u32 distance_size {30};
 static const u32 CL_size {19};
 
@@ -19,7 +19,7 @@ class TypeTwoEncoder{
 
     void Encode(OutputBitStream& stream, u32 block_size, std::array <u8, b2_size>& block_contents, bool is_last){
 
-        // Encode block w LZ SS
+        // Encode block w/ LZSS
         LZSSEncoder_2 lzss {};
         const std::vector<Code>& bit_stream = lzss.Encode(block_size, block_contents);
 
@@ -27,7 +27,7 @@ class TypeTwoEncoder{
         incrementDistanceCount(1);
         incrementDistanceCount(2);
         
-        // get symbol counts
+        // get symbol counts for LL and Distance symbols
         for(const Code& curr : bit_stream){
             if(curr.code_type == 1){
                 incrementLiteralCount(curr.value);
@@ -57,12 +57,12 @@ class TypeTwoEncoder{
         getDistanceProbabilities(distance_probability);
         // printProbabilities();
 
-        // get code lengths
+        // get code lengths by running Package Merge
         PackageMerge pm {};
         std::vector<u32> LL_code_lengths {pm.getSymbolLengths(LL_probability, LL_size)};
         std::vector<u32> distance_code_lengths {pm.getSymbolLengths(distance_probability, distance_size)};
 
-        // get encoding
+        // generate encoding
         DynamicCodes LL_codes {LL_code_lengths};
         DynamicCodes distance_codes {distance_code_lengths};
 
@@ -72,8 +72,8 @@ class TypeTwoEncoder{
         getCLProbabilities(CL_probability);
         std::vector<u32> CL_code_lengths {pm.getSymbolLengths(CL_probability, CL_size)};
         DynamicCodes CL_codes {CL_code_lengths};
-        printCLCount();
-        printLLDistanceEncoding();
+        // printCLCount();
+        // printLLDistanceEncoding();
 
         pushBlockHeader(stream, is_last, CL_code_lengths);
         pushLLDistanceLengths(stream, CL_codes);
@@ -94,7 +94,10 @@ class TypeTwoEncoder{
     double CL_total_count {};
     std::vector <u32> LL_distance_encoding {};
 
-
+    /*
+        Pushes part of the block type 2 header to the bit stream
+        last bit, block type, HLIT, HDIST, HCLEN and the CL lengths
+    */
     void pushBlockHeader(OutputBitStream& stream, bool& is_last, const std::vector<u32>& CL_code_lengths){
         stream.push_bit(is_last); 
         stream.push_bits(2, 2);                 // 2 bit block type
@@ -110,6 +113,12 @@ class TypeTwoEncoder{
         }
     }
 
+    /*
+        Pushes the LL and Distance lengths to the stream
+        uses the LL_Distance_Encoding (what to push) and the CL_codes objects (how to encode it)
+        pushSymbol() is a member function for pushing encodings
+        push_bits() is a member of output_stream.hpp and follows Rule #1 for pushing numerical values 
+    */
     void pushLLDistanceLengths(OutputBitStream& stream, DynamicCodes& CL_codes){
         u32 idx = 0;
         while(idx < LL_distance_encoding.size()){
@@ -126,12 +135,20 @@ class TypeTwoEncoder{
             ++idx;
         }
     }
+
+    /*
+        Pushes encoding representede as a vector of bools to the stream
+    */
     void pushSymbol(OutputBitStream& stream, const std::vector<bool>& seq){
         for(u32 bit : seq){
             stream.push_bit(bit);
         }
     }
 
+    /*
+        Pushes the vector of Code structs returned from the LZSS encoding of the block of data to the stream
+        Uses LL_codes and distance_codes to get dynamic encoding
+    */
     void pushBitStream(OutputBitStream& stream, const std::vector<Code>& bit_stream, DynamicCodes& LL_codes, DynamicCodes& distance_codes ){
         for(const Code& curr : bit_stream){
             if (curr.code_type == 1){
@@ -159,6 +176,10 @@ class TypeTwoEncoder{
         }
     }
 
+    /*
+        Pushed EOB to the stream 
+        Uses LL_codes to get dynamic encoding 
+    */
     void pushEOB(OutputBitStream& stream, DynamicCodes& LL_codes){
         std::vector<bool> EOB = LL_codes.getCodeSequence(256);
         for(auto bit : EOB){
@@ -204,12 +225,7 @@ class TypeTwoEncoder{
             }
         }
     }
-    // void printProbabilities(std::vector < std::pair <std::vector<u32>, double> >& LL_probability, std::vector < std::pair <std::vector<u32>, double> >& distance_probability){
-    //     for(u32 idx = 0; idx < LL_proabbilities.size(); ++idx){
-    //         std::cerr << LL_probabilities.first.at(0) << " " << LL_probabilities.second << std::endl;
-    //     }
 
-    // }
     void getCLProbabilities(std::vector < std::pair <std::vector<u32>, double> >& CL_probability){
         for(u32 idx = 0; idx < CL_size; ++idx){
             if(CL_count.at(idx) != 0){
@@ -219,19 +235,21 @@ class TypeTwoEncoder{
         }
     }
 
+    /*
+        Counts the CL symbol occurences while encoding the LL and Distance tables
+        Params: LL code length table and distance code length table
+        Modifies:   CL_count - to count the occurences for each CL symbol
+                    LL_distance_encoding - uses RLE to encode the length tables as it counts
+    */
     void getLLDistanceEncoding(std::vector<u32>& LL_code_lengths, std::vector<u32>& distance_code_lengths){
         std::vector <u32> ll_and_distance {};
         ll_and_distance.insert(ll_and_distance.end(), LL_code_lengths.begin(), LL_code_lengths.end());
         ll_and_distance.insert(ll_and_distance.end(), distance_code_lengths.begin(), distance_code_lengths.end());
 
-        // for(u32& v : ll_and_distance){
-        //     std::cerr << v << std::endl;
-        // }
-
         u32 idx = 0;
         while(idx < ll_and_distance.size()){
             u32 run_length = getRunLength(ll_and_distance, idx);
-            // std::cerr << "idx " << idx << " " << ll_and_distance.at(idx) << " RLE " << run_length;
+            // std::cerr << "idx " << idx << " symbol " << ll_and_distance.at(idx) << " RLE " << run_length;
 
             if (ll_and_distance.at(idx) == 0 && run_length > 10){
                 // std::cerr << " case 18" << std::endl;
@@ -274,6 +292,11 @@ class TypeTwoEncoder{
         }
     }
 
+    /*
+        Performs RLE starting at the 'start' index
+        for a run of zeros RLE count includes the first zero 
+        for a run of non-zero characters the RLE does not count the first character
+    */
     u32 getRunLength(std::vector<u32>& ll_and_distance, u32 start){
         u32 idx = start;
         while(idx < ll_and_distance.size() && ll_and_distance.at(idx) == ll_and_distance.at(start)){

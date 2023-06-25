@@ -256,14 +256,14 @@ class PackageMerge {
         u32 prob_size = probabilities.size();
 
         std::vector < std::pair <std::vector<u32>, double> > current {probabilities};
-        while(prob_size != 0 && current.size() < (2*prob_size)-2){
+        while(current.size() < (2*prob_size)-2){
             // sort with increasing probabilities
             sort(current.begin(), current.end(), sortByProb);
             // std::cerr << "---- sort ----" << std::endl;
             // printPairVector(current);
 
             // if odd number of packages -> discard last (if it not one of the original packages)
-            if(current.size()%2 != 0 && current.at(current.size()-1).first.size() > 1){
+            if(current.size()%2 != 0){
                 current.pop_back();
             }
             std::vector < std::pair <std::vector<u32>, double> > packages {};
@@ -291,7 +291,7 @@ class PackageMerge {
             lengths_table.push_back(countOccurances(current, symbol));
         }
 
-        // printLengths(lengths_table);
+        //printLengths(lengths_table);
 
         return lengths_table;
     }
