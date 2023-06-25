@@ -19,9 +19,13 @@ class TypeTwoEncoder{
 
     void Encode(OutputBitStream& stream, u32 block_size, std::array <u8, b2_size>& block_contents, bool is_last){
 
-        // Encode block w LZSS
+        // Encode block w LZ SS
         LZSSEncoder_2 lzss {};
         const std::vector<Code>& bit_stream = lzss.Encode(block_size, block_contents);
+
+        // generate as least 2 distance codes
+        incrementDistanceCount(1);
+        incrementDistanceCount(2);
         
         // get symbol counts
         for(const Code& curr : bit_stream){
@@ -68,9 +72,8 @@ class TypeTwoEncoder{
         getCLProbabilities(CL_probability);
         std::vector<u32> CL_code_lengths {pm.getSymbolLengths(CL_probability, CL_size)};
         DynamicCodes CL_codes {CL_code_lengths};
-
-        // printCLCount();
-        // printLLDistanceEncoding();
+        printCLCount();
+        printLLDistanceEncoding();
 
         pushBlockHeader(stream, is_last, CL_code_lengths);
         pushLLDistanceLengths(stream, CL_codes);
@@ -228,10 +231,10 @@ class TypeTwoEncoder{
         u32 idx = 0;
         while(idx < ll_and_distance.size()){
             u32 run_length = getRunLength(ll_and_distance, idx);
-            //std::cerr << "idx " << idx << " " << ll_and_distance.at(idx) << " RLE " << run_length;
+            // std::cerr << "idx " << idx << " " << ll_and_distance.at(idx) << " RLE " << run_length;
 
             if (ll_and_distance.at(idx) == 0 && run_length > 10){
-                //std::cerr << " case 18" << std::endl;
+                // std::cerr << " case 18" << std::endl;
 
                 run_length = std::min(run_length, u32(127+11));
                 ++CL_count.at(18);       // increment RLE
@@ -242,7 +245,7 @@ class TypeTwoEncoder{
                 idx += run_length;
             }
             else if (ll_and_distance.at(idx) == 0 && run_length >= 3){
-                //std::cerr << " case 17" << std::endl;
+                // std::cerr << " case 17" << std::endl;
                 ++CL_count.at(17);       // increment RLE
                 ++CL_total_count;
                 // LL_distance_encoding << symbol << RLE << len
@@ -251,7 +254,7 @@ class TypeTwoEncoder{
                 idx += run_length;
 
             }else if (run_length >= 3){    
-                //std::cerr << " case 16" << std::endl; 
+                // std::cerr << " case 16" << std::endl; 
                 run_length = std::min(run_length, u32(3+3));
                 ++CL_count.at(ll_and_distance.at(idx));        // increment symbol
                 ++CL_count.at(16);       // increment RLE
@@ -262,7 +265,7 @@ class TypeTwoEncoder{
                 LL_distance_encoding.push_back(run_length-3);
                 idx += (run_length+1);
             }else{
-                //std::cerr << " case reg" << std::endl;
+                // std::cerr << " case reg" << std::endl;
                 ++CL_count.at(ll_and_distance.at(idx));        // increment symbol
                 ++CL_total_count;
                 LL_distance_encoding.push_back(ll_and_distance.at(idx));

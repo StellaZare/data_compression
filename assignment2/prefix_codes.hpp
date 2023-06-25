@@ -253,10 +253,10 @@ class PackageMerge {
     PackageMerge () {};
     
     std::vector<u32> getSymbolLengths(const std::vector < std::pair <std::vector<u32>, double> > probabilities, u32 num_symbols) {
-        u32 m = probabilities.size();
+        u32 prob_size = probabilities.size();
 
         std::vector < std::pair <std::vector<u32>, double> > current {probabilities};
-        while(current.size() < (2*m)-2){
+        while(prob_size != 0 && current.size() < (2*prob_size)-2){
             // sort with increasing probabilities
             sort(current.begin(), current.end(), sortByProb);
             // std::cerr << "---- sort ----" << std::endl;
@@ -284,6 +284,7 @@ class PackageMerge {
             // std::cerr << "---- done ----" << std::endl;
             // printPairVector(current);
         }
+        
 
         std::vector<u32> lengths_table {};
         for(u32 symbol = 0; symbol < num_symbols; ++symbol){
