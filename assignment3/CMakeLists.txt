@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 # Specify project, compiler and languages
-project(uvg LANGUAGES CXX)
+project(assignment3 LANGUAGES CXX)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -std=c++20")
