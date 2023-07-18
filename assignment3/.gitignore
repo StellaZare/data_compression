@@ -1,6 +1,0 @@
-build/*
-my_compressed/*
-my_decompressed/*
-.vscode/*
-.*
-.*/

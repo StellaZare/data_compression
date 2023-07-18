@@ -1,9 +1,0 @@
-*.pdf
-test_data/
-my_tests/
-uvcompress/uvcompress
-.vscode
-*.tar*
-./uvgz
-build/
-
