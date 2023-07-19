@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <array>
 
 //Convenience function to wrap around the nasty notation for 2d vectors
 template<typename T>
