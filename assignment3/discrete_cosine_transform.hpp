@@ -7,6 +7,13 @@ using u32 = std::uint32_t;
 
 namespace dct{
 
+    // enum for quality level
+    enum Quality {
+        low = 0,        // 2 * quantize matrix 
+        medium,         // 1 * quantize matrix
+        high            // 0.5 * quantize matrix
+    };
+
     // the result of running create_c_matrix() from discrete_cosine_transfrom.cpp  
     const Block8x8 c_matrix {{
         {0.353553,  0.353553,   0.353553,   0.353553,   0.353553,   0.353553,   0.353553,   0.353553    },
@@ -64,6 +71,22 @@ namespace dct{
             std::cout << "}" << std::endl;
         }
     }
+
+    // returns the 8x8 block result of multiplying blockA by blockB
+    Block8x8 multiply_block(const Block8x8& blockA, const Block8x8& blockB){
+    Block8x8 result;
+    for(u32 r = 0; r < 8; r++){
+        for(u32 c = 0; c < 8; c++){
+            double sum = 0;
+            for(u32 idx = 0; idx < 8; idx++){
+                sum += (blockA.at(r).at(idx) * blockB.at(idx).at(c));
+            }
+            // std::cout << " = " << sum << std::endl;
+            result.at(r).at(c) = sum;
+        }
+    }
+    return result;
+}
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
     void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> channel){
