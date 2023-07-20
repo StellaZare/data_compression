@@ -3,6 +3,7 @@
 #include <array>
 
 using Block8x8 = std::array<std::array<double, 8>, 8>;
+using u32 = std::uint32_t;
 
 namespace dct{
 
@@ -16,6 +17,17 @@ namespace dct{
         {0.277785,  -0.490393,  0.0975452,  0.415735,   -0.415735,  -0.0975452, 0.490393,   -0.277785   },
         {0.191342,  -0.46194,   0.46194,    -0.191342,  -0.191342,  0.46194,    -0.46194,   0.191342    },
         {0.0975452, -0.277785,  0.415735,   -0.490393,  0.490393,   -0.415735,  0.277785,   -0.0975452  }
+    }};
+    // the result of running transpose_block() from discrete_cosine_transfrom.cpp 
+    const Block8x8 c_matrix_transpose {{
+        {0.353553, 0.490393,   0.46194,   0.415735,   0.353553,  0.277785,   0.191342,  0.0975452   },
+        {0.353553, 0.415735,   0.191342,  -0.0975452, -0.353553, -0.490393,  -0.46194,  -0.277785   },
+        {0.353553, 0.277785,   -0.191342, -0.490393,  -0.353553, 0.0975452,  0.46194,   0.415735    },
+        {0.353553, 0.0975452,  -0.46194,  -0.277785,  0.353553,  0.415735,   -0.191342, -0.490393   },
+        {0.353553, -0.0975452, -0.46194,  0.277785,   0.353553,  -0.415735,  -0.191342, 0.490393    },
+        {0.353553, -0.277785,  -0.191342, 0.490393,   -0.353553, -0.0975452, 0.46194,   -0.415735   },
+        {0.353553, -0.415735,  0.191342,  0.0975452,  -0.353553, 0.490393,   -0.46194,  0.277785    },
+        {0.353553, -0.490393,  0.46194,   -0.415735,  0.353553,  -0.277785,  0.191342,  -0.0975452  }
     }};
 
     // quantization matrix used by JPEG - from lecture slides
@@ -42,16 +54,18 @@ namespace dct{
         {99, 99, 99, 99, 99, 99, 99, 99},
     }};
 
+    // prints 8x8 block to standard out
     void print_block8x8(const Block8x8& matrix){
-    for(u32 r = 0; r < 8; r++){
-        std::cout << "{ ";
-        for(u32 c = 0; c < 8; c++){
-            std::cout << matrix.at(r).at(c) << " ";
+        for(u32 r = 0; r < 8; r++){
+            std::cout << "{ ";
+            for(u32 c = 0; c < 8; c++){
+                std::cout << matrix.at(r).at(c) << " ";
+            }
+            std::cout << "}" << std::endl;
         }
-        std::cout << "}" << std::endl;
     }
-}
 
+    // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
     void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> channel){
         for(u32 r = 0; r < height; r+=8){
             for(u32 c = 0; c < width; c+=8){
