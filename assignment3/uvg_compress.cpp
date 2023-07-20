@@ -24,6 +24,7 @@
 #include "output_stream.hpp"
 #include "bitmap_image.hpp"
 #include "uvg_common.hpp"
+#include "discrete_cosine_transform.hpp"
 
 
 //A simple downscaling algorithm using averaging.
@@ -65,12 +66,12 @@ int main(int argc, char** argv){
     unsigned int height = input_image.height();
     unsigned int width = input_image.width();
 
+    std::cout << "height: " << height << " width: " << width << std::endl;
+
     //Read the entire image into a 2d array of PixelRGB objects 
     //(Notice that height is the outer dimension, so the pixel at coordinates (x,y) 
     // must be accessed as imageRGB.at(y).at(x)).
     std::vector<std::vector<PixelYCbCr>> imageYCbCr = create_2d_vector<PixelYCbCr>(height,width);
-
-
     for(unsigned int y = 0; y < height; y++){
         for (unsigned int x = 0; x < width; x++){
             auto [r,g,b] = input_image.get_pixel(x,y);
@@ -79,47 +80,77 @@ int main(int argc, char** argv){
         }
     }
 
-    std::ofstream output_file{output_filename,std::ios::binary};
-    OutputBitStream output_stream {output_file};
+    // Separate Y Cb Cr channels
+    auto Y_matrix = create_2d_vector<unsigned char>(height, width);
+    auto Cb_matrix = create_2d_vector<unsigned char>(height, width);
+    auto Cr_matrix = create_2d_vector<unsigned char>(height, width);
+    for(unsigned int y = 0; y < height; y++){
+        for (unsigned int x = 0; x < width; x++){
+            Y_matrix.at(y).at(x) = imageYCbCr.at(y).at(x).Y; 
+            Cb_matrix.at(y).at(x) = imageYCbCr.at(y).at(x).Cb; 
+            Cr_matrix.at(y).at(x) = imageYCbCr.at(y).at(x).Cr; 
+        }
+    }
 
-    //Placeholder: Use a simple bitstream containing the height/width (in 32 bits each)
-    //followed by the entire set of values in each colour plane (in row major order).
+    // Downscale Cb and Cr color channels
+    unsigned int scaled_height = (height+2-1)/2;
+    unsigned int scaled_width = (width+2-1)/2;
+    auto Cb_scaled = scale_down(Cb_matrix,width,height,2);
+    auto Cr_scaled = scale_down(Cr_matrix,width,height,2);
 
-    output_stream.push_u32(height);
-    output_stream.push_u32(width);
+    // Partition colow channels into 8x8 blocks and fill
+    std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
+    dct::partition_channel(Y_blocks, height, width, Y_matrix);
+    dct::partition_channel(Cb_blocks, scaled_height, scaled_width, Cb_scaled);
+    dct::partition_channel(Cr_blocks, scaled_height, scaled_width, Cr_scaled);
 
-    //Write the Y values 
-    for(unsigned int y = 0; y < height; y++)
-        for (unsigned int x = 0; x < width; x++)
-            output_stream.push_byte(imageYCbCr.at(y).at(x).Y);
+    std::cout << "Y blocks: " << Y_blocks.size() << std::endl;
+    std::cout << "Cb blocks: " << Cb_blocks.size() << std::endl;
+    std::cout << "Cr blocks: " << Cr_blocks.size() << std::endl;
 
-    //Extract the Cb plane into its own array 
-    auto Cb = create_2d_vector<unsigned char>(height,width);
-    for(unsigned int y = 0; y < height; y++)
-        for (unsigned int x = 0; x < width; x++)
-            Cb.at(y).at(x) = imageYCbCr.at(y).at(x).Cb;
-    auto Cb_scaled = scale_down(Cb,width,height,2);
+    for(const Block8x8& b: Y_blocks){
+        std::cout << "------" << std::endl;
+        dct::print_block8x8(b);
+    }
 
-    //Extract the Cr plane into its own array 
-    auto Cr = create_2d_vector<unsigned char>(height,width);
-    for(unsigned int y = 0; y < height; y++)
-        for (unsigned int x = 0; x < width; x++)
-            Cr.at(y).at(x) = imageYCbCr.at(y).at(x).Cr;
-    auto Cr_scaled = scale_down(Cr,width,height,2);
+    // std::ofstream output_file{output_filename,std::ios::binary};
+    // OutputBitStream output_stream {output_file};
 
-    //Write the Cb values 
-    for(unsigned int y = 0; y < (height+1)/2; y++)
-        for (unsigned int x = 0; x < (width+1)/2; x++)
-            output_stream.push_byte(Cb_scaled.at(y).at(x));
+    // output_stream.push_u32(height);
+    // output_stream.push_u32(width);
 
-    //Write the Cr values 
-    for(unsigned int y = 0; y < (height+1)/2; y++)
-        for (unsigned int x = 0; x < (width+1)/2; x++)
-            output_stream.push_byte(Cr_scaled.at(y).at(x));
+    // //Write the Y values 
+    // for(unsigned int y = 0; y < height; y++)
+    //     for (unsigned int x = 0; x < width; x++)
+    //         output_stream.push_byte(imageYCbCr.at(y).at(x).Y);
+
+    // //Extract the Cb plane into its own array 
+    // auto Cb = create_2d_vector<unsigned char>(height,width);
+    // for(unsigned int y = 0; y < height; y++)
+    //     for (unsigned int x = 0; x < width; x++)
+    //         Cb.at(y).at(x) = imageYCbCr.at(y).at(x).Cb;
+    // auto Cb_scaled = scale_down(Cb,width,height,2);
+
+    // //Extract the Cr plane into its own array 
+    // auto Cr = create_2d_vector<unsigned char>(height,width);
+    // for(unsigned int y = 0; y < height; y++)
+    //     for (unsigned int x = 0; x < width; x++)
+    //         Cr.at(y).at(x) = imageYCbCr.at(y).at(x).Cr;
+    // auto Cr_scaled = scale_down(Cr,width,height,2);
+
+    // //Write the Cb values 
+    // for(unsigned int y = 0; y < (height+1)/2; y++)
+    //     for (unsigned int x = 0; x < (width+1)/2; x++)
+    //         output_stream.push_byte(Cb_scaled.at(y).at(x));
+
+    // //Write the Cr values 
+    // for(unsigned int y = 0; y < (height+1)/2; y++)
+    //     for (unsigned int x = 0; x < (width+1)/2; x++)
+    //         output_stream.push_byte(Cr_scaled.at(y).at(x));
 
 
-    output_stream.flush_to_byte();
-    output_file.close();
+    // output_stream.flush_to_byte();
+    // output_file.close();
 
     return 0;
 }
