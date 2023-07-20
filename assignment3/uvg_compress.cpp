@@ -21,11 +21,10 @@
 #include <string>
 #include <cassert>
 #include <cstdint>
-#include "output_stream.hpp"
 #include "bitmap_image.hpp"
 #include "uvg_common.hpp"
 #include "discrete_cosine_transform.hpp"
-
+#include "bit_stream.hpp"
 
 //A simple downscaling algorithm using averaging.
 std::vector<std::vector<unsigned char> > scale_down(std::vector<std::vector<unsigned char> > source_image, unsigned int source_width, unsigned int source_height, int factor){
@@ -50,27 +49,40 @@ std::vector<std::vector<unsigned char> > scale_down(std::vector<std::vector<unsi
     return result;
 }
 
-
 int main(int argc, char** argv){
 
     if (argc < 4){
         std::cerr << "Usage: " << argv[0] << " <low/medium/high> <input BMP> <output file>" << std::endl;
         return 1;
     }
-    std::string quality{argv[1]};
+    std::string input_quality{argv[1]};
     std::string input_filename {argv[2]};
     std::string output_filename {argv[3]};
 
-    bitmap_image input_image {input_filename};
+    // configure quality settings
+    dct::Quality quality;
+    if(input_quality == "low"){
+        quality = dct::Quality::low;
+    }else if(input_quality == "medium"){
+        quality = dct::Quality::medium;
+    }else if(input_quality == "high"){
+        quality = dct::Quality::high;
+    }else{
+        std::cerr << "Usage: " << argv[0] << " <low/medium/high> <input BMP> <output file>" << std::endl;
+        return 1;
+    }
 
+    // get image data
+    bitmap_image input_image {input_filename};
     unsigned int height = input_image.height();
     unsigned int width = input_image.width();
 
-    std::cout << "height: " << height << " width: " << width << std::endl;
+    // configure bitstream
+    std::ofstream output_file{output_filename,std::ios::binary};
+    OutputBitStream output_stream {output_file};
+    stream::pushHeader(output_stream, quality, height, width);
 
     //Read the entire image into a 2d array of PixelRGB objects 
-    //(Notice that height is the outer dimension, so the pixel at coordinates (x,y) 
-    // must be accessed as imageRGB.at(y).at(x)).
     std::vector<std::vector<PixelYCbCr>> imageYCbCr = create_2d_vector<PixelYCbCr>(height,width);
     for(unsigned int y = 0; y < height; y++){
         for (unsigned int x = 0; x < width; x++){
@@ -80,7 +92,7 @@ int main(int argc, char** argv){
         }
     }
 
-    // Separate Y Cb Cr channels
+    // Separate Y Cb and Cr channels
     auto Y_matrix = create_2d_vector<unsigned char>(height, width);
     auto Cb_matrix = create_2d_vector<unsigned char>(height, width);
     auto Cr_matrix = create_2d_vector<unsigned char>(height, width);
@@ -108,49 +120,21 @@ int main(int argc, char** argv){
     // std::cout << "Cb blocks: " << Cb_blocks.size() << std::endl;
     // std::cout << "Cr blocks: " << Cr_blocks.size() << std::endl;
 
-    // for(const Block8x8& b: Y_blocks){
-    //     std::cout << "------" << std::endl;
-    //     dct::print_block8x8(b);
-    // }
+    for(Block8x8& curr_block : Y_blocks){
+        Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
+        stream::pushBlock(output_stream, dct::order_block(quantized_block));
+    }
+    for(Block8x8& curr_block : Cb_blocks){
+        Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+        stream::pushBlock(output_stream, dct::order_block(quantized_block));
+    }
+    for(Block8x8& curr_block : Cr_blocks){
+        Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+        stream::pushBlock(output_stream, dct::order_block(quantized_block));
+    }
 
-    // std::ofstream output_file{output_filename,std::ios::binary};
-    // OutputBitStream output_stream {output_file};
-
-    // output_stream.push_u32(height);
-    // output_stream.push_u32(width);
-
-    // //Write the Y values 
-    // for(unsigned int y = 0; y < height; y++)
-    //     for (unsigned int x = 0; x < width; x++)
-    //         output_stream.push_byte(imageYCbCr.at(y).at(x).Y);
-
-    // //Extract the Cb plane into its own array 
-    // auto Cb = create_2d_vector<unsigned char>(height,width);
-    // for(unsigned int y = 0; y < height; y++)
-    //     for (unsigned int x = 0; x < width; x++)
-    //         Cb.at(y).at(x) = imageYCbCr.at(y).at(x).Cb;
-    // auto Cb_scaled = scale_down(Cb,width,height,2);
-
-    // //Extract the Cr plane into its own array 
-    // auto Cr = create_2d_vector<unsigned char>(height,width);
-    // for(unsigned int y = 0; y < height; y++)
-    //     for (unsigned int x = 0; x < width; x++)
-    //         Cr.at(y).at(x) = imageYCbCr.at(y).at(x).Cr;
-    // auto Cr_scaled = scale_down(Cr,width,height,2);
-
-    // //Write the Cb values 
-    // for(unsigned int y = 0; y < (height+1)/2; y++)
-    //     for (unsigned int x = 0; x < (width+1)/2; x++)
-    //         output_stream.push_byte(Cb_scaled.at(y).at(x));
-
-    // //Write the Cr values 
-    // for(unsigned int y = 0; y < (height+1)/2; y++)
-    //     for (unsigned int x = 0; x < (width+1)/2; x++)
-    //         output_stream.push_byte(Cr_scaled.at(y).at(x));
-
-
-    // output_stream.flush_to_byte();
-    // output_file.close();
+    output_stream.flush_to_byte();
+    output_file.close();
 
     return 0;
 }
