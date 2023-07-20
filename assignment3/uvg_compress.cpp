@@ -104,14 +104,14 @@ int main(int argc, char** argv){
     dct::partition_channel(Cb_blocks, scaled_height, scaled_width, Cb_scaled);
     dct::partition_channel(Cr_blocks, scaled_height, scaled_width, Cr_scaled);
 
-    std::cout << "Y blocks: " << Y_blocks.size() << std::endl;
-    std::cout << "Cb blocks: " << Cb_blocks.size() << std::endl;
-    std::cout << "Cr blocks: " << Cr_blocks.size() << std::endl;
+    // std::cout << "Y blocks: " << Y_blocks.size() << std::endl;
+    // std::cout << "Cb blocks: " << Cb_blocks.size() << std::endl;
+    // std::cout << "Cr blocks: " << Cr_blocks.size() << std::endl;
 
-    for(const Block8x8& b: Y_blocks){
-        std::cout << "------" << std::endl;
-        dct::print_block8x8(b);
-    }
+    // for(const Block8x8& b: Y_blocks){
+    //     std::cout << "------" << std::endl;
+    //     dct::print_block8x8(b);
+    // }
 
     // std::ofstream output_file{output_filename,std::ios::binary};
     // OutputBitStream output_stream {output_file};
