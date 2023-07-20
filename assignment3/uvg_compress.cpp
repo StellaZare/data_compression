@@ -74,8 +74,8 @@ int main(int argc, char** argv){
 
     // get image data
     bitmap_image input_image {input_filename};
-    unsigned int height = input_image.height();
-    unsigned int width = input_image.width();
+    u16 height = input_image.height();
+    u16 width = input_image.width();
 
     // configure bitstream
     std::ofstream output_file{output_filename,std::ios::binary};
