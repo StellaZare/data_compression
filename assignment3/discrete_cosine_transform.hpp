@@ -1,17 +1,29 @@
+#ifndef DISCRETE_COSINE_TRANSFORM
+#define DISCRETE_COSINE_TRANSFORM
+
 #include <vector>
 #include <cmath>
 #include <array>
 
 using Block8x8 = std::array<std::array<double, 8>, 8>;
+using Array64  = std::array<int, 64>;
 using u32 = std::uint32_t;
 
 namespace dct{
 
-    // enum for quality level
+    // enum for quality level - used in quantize_block()
     enum Quality {
-        low = 0,        // 2 * quantize matrix 
-        medium,         // 1 * quantize matrix
-        high            // 0.5 * quantize matrix
+        low = 0,        // 2 * quantize matrix   
+        medium,         // 1 * quantize matrix     
+        high            // 0.5 * quantize matrix    
+    };
+
+    // enum for incrementation direction - used in get_direction() and order_block()
+    enum Direction {
+        right = 0,
+        down,
+        down_left,
+        up_right
     };
 
     // the result of running create_c_matrix()  
@@ -62,6 +74,17 @@ namespace dct{
         {99, 99, 99, 99, 99, 99, 99, 99},
     }};
 
+    const Block8x8 quantization_order {{
+        {0,  1,  5,  6,  14, 15, 27, 28},
+        {2,  4,  7,  13, 16, 26, 29, 42},
+        {3,  8,  12, 17, 25, 30, 41, 43},
+        {9,  11, 18, 24, 31, 40, 44, 53},
+        {10, 19, 23, 32, 39, 45, 52, 54},
+        {20, 22, 33, 38, 46, 51, 55, 60},
+        {21, 34, 37, 47, 50, 56, 59, 61},
+        {35, 36, 48, 49, 57, 58, 62, 63}
+    }};
+
     // returns the c_matrix for n = 8
     Block8x8 create_c_matrix(){
         Block8x8 c_matrix {};
@@ -82,6 +105,16 @@ namespace dct{
         return c_matrix;
     }
     
+    // prints array of 64 to standard out
+    void print_array(const Array64& array){
+        std::cout << "-------" << std::endl;
+        for(u32 idx = 0; idx < 64; idx++){
+            if(idx > 0 && idx%8 == 0)
+                std::cout << std::endl;
+            std::cout << array.at(idx) << " ";
+        }
+        std::cout << std::endl;
+    }
     // prints 8x8 block to standard out
     void print_block(const Block8x8& matrix){
         for(u32 r = 0; r < 8; r++){
@@ -150,7 +183,7 @@ namespace dct{
     }
 
     // returns the quantized block calculated using the provided quantization matrix at the provided quality 
-    Block8x8 quantize(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
+    Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
         double multiplier;
         if(quality == low){
             multiplier = 2;
@@ -169,4 +202,44 @@ namespace dct{
         return result;
     }
 
+    Direction get_direction(u32 r, u32 c, Direction curr){
+        u32 first = 0;
+        u32 last = 7;
+
+        if((r == first || r == last) && c%2 == 0){
+            return right;
+        }else if((c == first || c == last) && r%2 == 1){
+            return down;
+        }else if((r == first && c%2 == 1) || (c == last && r%2 == 0)){
+            return down_left;
+        }else if((c == first && r%2 == 0) || (r == last && c%2 == 1)){
+            return up_right;
+        }
+        return curr;
+    }
+
+    Array64 order_block(const Block8x8& block){
+        Direction dir;
+        Array64 result;   
+
+        u32 r = 0, c = 0, count = 0;
+        while(r < 8 && c < 8){
+            result.at(count++) = block.at(r).at(c);
+            dir = get_direction(r, c, dir);
+
+            if(dir == right){
+                c++;
+            }else if(dir == down){
+                r++;
+            }else if(dir == down_left){
+                r++; c--;
+            }else{
+                r--; c++;
+            }
+        }
+        return result;
+    }
+
 }
+
+#endif 
