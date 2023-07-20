@@ -42,4 +42,38 @@ namespace dct{
         {99, 99, 99, 99, 99, 99, 99, 99},
     }};
 
+    void print_block8x8(const Block8x8& matrix){
+    for(u32 r = 0; r < 8; r++){
+        std::cout << "{ ";
+        for(u32 c = 0; c < 8; c++){
+            std::cout << matrix.at(r).at(c) << " ";
+        }
+        std::cout << "}" << std::endl;
+    }
+}
+
+    void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> channel){
+        for(u32 r = 0; r < height; r+=8){
+            for(u32 c = 0; c < width; c+=8){
+                Block8x8 current_block;
+                // index into 8x8 sub block
+                for(u32 sub_r = 0; sub_r < 8; sub_r++){
+                    for(u32 sub_c = 0; sub_c < 8; sub_c++){
+                        // copy element 
+                        if((r+sub_r) >= height && (c+sub_c) < width){
+                            current_block.at(sub_r).at(sub_c) = double(channel.at(height-1).at(c+sub_c));
+                        }else if((c+sub_c) >= width && (r+sub_r) < height){
+                            current_block.at(sub_r).at(sub_c) = double(channel.at(r+sub_r).at(width-1));
+                        }else if((r+sub_r) >= height && (c+sub_c) >= width){
+                            current_block.at(sub_r).at(sub_c) = double(channel.at(height-1).at(width-1));
+                        }else{
+                            current_block.at(sub_r).at(sub_c) = double(channel.at(r+sub_r).at(c+sub_c));
+                        }
+                    }
+                }
+                blocks.push_back(current_block);
+            }
+        }
+    }
+
 }
