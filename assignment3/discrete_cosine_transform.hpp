@@ -14,7 +14,7 @@ namespace dct{
         high            // 0.5 * quantize matrix
     };
 
-    // the result of running create_c_matrix() from discrete_cosine_transfrom.cpp  
+    // the result of running create_c_matrix()  
     const Block8x8 c_matrix {{
         {0.353553,  0.353553,   0.353553,   0.353553,   0.353553,   0.353553,   0.353553,   0.353553    },
         {0.490393,  0.415735,   0.277785,   0.0975452,  -0.0975452, -0.277785,  -0.415735,  -0.490393   },
@@ -25,6 +25,7 @@ namespace dct{
         {0.191342,  -0.46194,   0.46194,    -0.191342,  -0.191342,  0.46194,    -0.46194,   0.191342    },
         {0.0975452, -0.277785,  0.415735,   -0.490393,  0.490393,   -0.415735,  0.277785,   -0.0975452  }
     }};
+
     // the result of running transpose_block() from discrete_cosine_transfrom.cpp 
     const Block8x8 c_matrix_transpose {{
         {0.353553, 0.490393,   0.46194,   0.415735,   0.353553,  0.277785,   0.191342,  0.0975452   },
@@ -61,8 +62,28 @@ namespace dct{
         {99, 99, 99, 99, 99, 99, 99, 99},
     }};
 
+    // returns the c_matrix for n = 8
+    Block8x8 create_c_matrix(){
+        Block8x8 c_matrix {};
+        double n = 8;
+        double root_1_over_n = std::sqrt(1/n);
+        double root_2_over_n = std::sqrt(2/n);
+
+        for(u32 r = 0; r < n; r++){
+            for(u32 c = 0; c < n; c++){
+                if(r == 0){
+                    c_matrix.at(r).at(c) = root_1_over_n;
+                }else{
+                    double angle = ((2*c+1) * r * M_PI)/(2*n);
+                    c_matrix.at(r).at(c) = root_2_over_n * std::cos(angle);
+                }
+            }
+        }
+        return c_matrix;
+    }
+    
     // prints 8x8 block to standard out
-    void print_block8x8(const Block8x8& matrix){
+    void print_block(const Block8x8& matrix){
         for(u32 r = 0; r < 8; r++){
             std::cout << "{ ";
             for(u32 c = 0; c < 8; c++){
@@ -74,19 +95,28 @@ namespace dct{
 
     // returns the 8x8 block result of multiplying blockA by blockB
     Block8x8 multiply_block(const Block8x8& blockA, const Block8x8& blockB){
-    Block8x8 result;
-    for(u32 r = 0; r < 8; r++){
-        for(u32 c = 0; c < 8; c++){
-            double sum = 0;
-            for(u32 idx = 0; idx < 8; idx++){
-                sum += (blockA.at(r).at(idx) * blockB.at(idx).at(c));
+        Block8x8 result;
+        for(u32 r = 0; r < 8; r++){
+            for(u32 c = 0; c < 8; c++){
+                double sum = 0;
+                for(u32 idx = 0; idx < 8; idx++){
+                    sum += (blockA.at(r).at(idx) * blockB.at(idx).at(c));
+                }
+                // std::cout << " = " << sum << std::endl;
+                result.at(r).at(c) = sum;
             }
-            // std::cout << " = " << sum << std::endl;
-            result.at(r).at(c) = sum;
         }
+        return result;
     }
-    return result;
-}
+
+    // returns the 8x8 block result of transposing the block
+    Block8x8 transpose_block(const Block8x8& block){
+        Block8x8 transpose;
+        for (u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                transpose.at(c).at(r) = block.at(r).at(c);
+        return transpose;
+    }
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
     void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> channel){
@@ -111,6 +141,32 @@ namespace dct{
                 blocks.push_back(current_block);
             }
         }
+    }
+    
+    // returns the dct of block A by computing [C][A][C]_transpose
+    Block8x8 get_dct(const Block8x8& block){
+        Block8x8 result = multiply_block(c_matrix, block);
+        return multiply_block(result, c_matrix_transpose);
+    }
+
+    // returns the quantized block calculated using the provided quantization matrix at the provided quality 
+    Block8x8 quantize(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
+        double multiplier;
+        if(quality == low){
+            multiplier = 2;
+        }else if(quality == medium){
+            multiplier = 1;
+        }else{
+            multiplier = 0.5;
+        }
+
+        Block8x8 result;
+        for(u32 r = 0; r < 8; r++){
+            for(u32 c = 0; c < 8; c++){
+                result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * q_matrix.at(r).at(c)) );
+            }
+        }
+        return result;
     }
 
 }
