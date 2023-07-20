@@ -8,6 +8,7 @@
 using Block8x8 = std::array<std::array<double, 8>, 8>;
 using Array64  = std::array<int, 64>;
 using u32 = std::uint32_t;
+using u16 = std::uint16_t;
 
 namespace dct{
 
