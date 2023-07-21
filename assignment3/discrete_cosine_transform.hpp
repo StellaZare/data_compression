@@ -131,6 +131,14 @@ namespace dct{
         }
     }
 
+    // prints all blocks in a block vector
+    void print_blocks(const std::vector<Block8x8>& blocks){
+        for(const Block8x8& b : blocks){
+            std::cout << "-------" << std::endl;
+            print_block(b);
+        }
+    }
+
     // print image YCbCr given the height and width 
     void print_image_YCbCr(const std::vector<std::vector<PixelYCbCr>>& image, u16 height, u16 width){
         for(u16 r = 0; r < height; r++){
