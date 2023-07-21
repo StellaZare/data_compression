@@ -2,63 +2,50 @@
 #include <vector>
 #include <cmath>
 #include "discrete_cosine_transform.hpp"
-
-using u32 = std::uint32_t;
-
-void print_block(const Block8x8& matrix){
-    for(u32 r = 0; r < 8; r++){
-        std::cout << "{ ";
-        for(u32 c = 0; c < 8; c++){
-            std::cout << matrix.at(r).at(c) << ", ";
-        }
-        std::cout << "}" << std::endl;
-    }
-}
-
-
-
+#include "uvg_common.hpp"
 
 int main(){
-    Block8x8 c_matrix = create_c_matrix(8);
-    // std::cout << "----" << std::endl;
-    // print_block(c_matrix);
+    
+    // Array64 array = dct::block_to_array(dct::quantization_order);
+    // dct::print_array(array);
 
-    const u32 width = 8;
-    const u32 height = 8;
+    // Block8x8 block = dct::array_to_block(array);
+    // dct::print_block(block);
 
-    std::array<std::array<double, width>, height> practice;
-    u32 counter = 1;
+    u32 height = 30;
+    u32 width = 15;
+    u32 count = 1;
+
+    auto matrix = create_2d_vector<unsigned char>(height, width);
     for(u32 r = 0; r < height; r++){
         for(u32 c = 0; c < width; c++){
-            practice.at(r).at(c) = counter++; 
+            matrix.at(r).at(c) = count++;
         }
     }
 
-    Block8x8 mult = multiply_block(practice, practice);
-    std::cout << "----" << std::endl;
-    print_block(mult);
-
-    // Block8x8 current_block;
-    // for(u32 r = 0; r < height; r+=8){
-    //     for(u32 c = 0; c < width; c+=8){
-    //         std::cout << "[" << r << ", " <<c << "]" <<std::endl;
-    //         for(u32 sub_r = 0; sub_r < 8; sub_r++){
-    //             for(u32 sub_c = 0; sub_c < 8; sub_c++){
-    //                 if((r+sub_r) >= height && (c+sub_c) < width){
-    //                     current_block.at(sub_r).at(sub_c) = practice.at(height-1).at(c+sub_c);;
-    //                 }else if((c+sub_c) >= width && (r+sub_r) < height){
-    //                     current_block.at(sub_r).at(sub_c) = practice.at(r+sub_r).at(width-1);
-    //                 }else if((r+sub_r) >= height && (c+sub_c) >= width){
-    //                     current_block.at(sub_r).at(sub_c) = practice.at(height-1).at(width-1);
-    //                 }else{
-    //                     current_block.at(sub_r).at(sub_c) = practice.at(r+sub_r).at(c+sub_c);
-    //                 }
-    //             }
-    //         }
-    //         print_block(current_block, 8, 8);
-    //         std::cout << "-------" << std::endl;
-    //     }
+    std::vector<Block8x8> blocks;
+    dct::partition_channel(blocks, height, width, matrix);
+    // for(const Block8x8& b : blocks){
+    //     std::cout << "------" <<std::endl;
+    //     dct::print_block(b);
     // }
+
+    auto after = create_2d_vector<unsigned char>(height, width);
+    std::cout << "matrix ---------" <<std::endl;
+    for(u32 r = 0; r < height; r++){
+        for(u32 c = 0; c < width; c++){
+            std::cout << matrix.at(r).at(c) << " ";
+        }
+        std::cout << std::endl;
+    }
+    dct::undo_partition_channel(blocks, height, width, after);
+    std::cout << "matrix ---------" <<std::endl;
+    for(u32 r = 0; r < height; r++){
+        for(u32 c = 0; c < width; c++){
+            std::cout << matrix.at(r).at(c) << " ";
+        }
+        std::cout << std::endl;
+    }
 
     return 0;
 }

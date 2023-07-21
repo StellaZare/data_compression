@@ -49,39 +49,53 @@ int main(int argc, char** argv){
     u16 Y_blocks_high = (height%8 == 0) ? height/8 : (width/8)+1;
     u16 num_Y_blocks = Y_blocks_wide * Y_blocks_high;
 
+    std::cout << "num y blocks: " << num_Y_blocks << std::endl;
+
     // calculate number of Cb and Cr blocks expected
     u16 scaled_height = (height+1)/2;
     u16 scaled_width = (width+1)/2; 
     u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
     u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
     u16 num_C_blocks = C_blocks_wide * C_blocks_high;
+
+    std::cout << "num Cr Cb blocks: " << num_C_blocks << std::endl;
     
     // read blocks for each color channel in row major order
     std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
     for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
-        // std::cout << "decompressor" <<std::endl;
-        Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
-        // std::cout << "block" <<std::endl;
-        // dct::print_block(block);
+        Block8x8 block = dct::array_to_block(stream::readQuantizedArray(input_stream));
         block = dct::unquantize_block(block, quality, dct::luminance);
-        // std::cout << "unquantized" <<std::endl;
-        // dct::print_block(block);
         block = dct::get_inverse_dct(block);
-        // std::cout << "inverse dct" <<std::endl;
-        // dct::print_block(block);
         Y_blocks.push_back(block);
     }
     for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
-        Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
+        // Block8x8 zero_block;
+        // for(u32 r = 0; r< 8; r++){
+        //     for(u32 c = 0; c< 8; c++){
+        //         zero_block.at(r).at(c) = 0;
+        //     }
+        // }
+        Block8x8 block = dct::array_to_block(stream::readQuantizedArray(input_stream));
         block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
         Cb_blocks.push_back(block);
+
+        // Cr_blocks.push_back(block);
+        // Cb_blocks.push_back(zero_block);
     }
     for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
-        Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
-        block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
-        dct::print_block(block);
+        Block8x8 block = dct::array_to_block(stream::readQuantizedArray(input_stream));
+        block = dct::unquantize_block(block, quality, dct::chrominance);
+        block = dct::get_inverse_dct( block );
         Cr_blocks.push_back(block);
+        // Cb_blocks.push_back(block);
     }
+
+    std::cout << "Y" << std::endl;
+    dct::print_blocks(Y_blocks);
+    std::cout << "Cb" << std::endl;
+    dct::print_blocks(Cb_blocks);
+    std::cout << "Cr" << std::endl;
+    dct::print_blocks(Cr_blocks);
 
     // undo particitioning of channels into 8x8 blocks
     auto Y_matrix = create_2d_vector<unsigned char>(height,width);
@@ -103,7 +117,7 @@ int main(int argc, char** argv){
         }
     }
 
-    // dct::print_image_YCbCr(imageYCbCr, height, width);
+    dct::print_image_YCbCr(imageYCbCr, height, width);
     
     input_stream.flush_to_byte();
     input_file.close();

@@ -26,30 +26,34 @@ namespace stream{
        width = stream.read_u16();
     }
 
-    void pushBlock(OutputBitStream& stream, Array64 block){
+    void pushQuantizedArray(OutputBitStream& stream, Array64 array){
         for(u32 idx = 0; idx < 64; idx++){
-            if(block.at(idx) < 0){
-                stream.push_bit(1);
-                stream.push_u16(-1 * block.at(idx));
-            }else{
-                stream.push_bit(0);
-                stream.push_u16(block.at(idx));
-            }
+            int num = array.at(idx);
+            // sign bit
+            bool sign = (num < 0) ? 1 : 0;
+            stream.push_bit(sign);
+            // value
+            num = (num < 0) ? -1*num : num;
+            stream.push_u16(num);
+            // prints
+            // std::cout << sign << num << " ";
+            // if(idx != 0 && idx%8==0)
+            //     std::cout<<std::endl;
         }
     }
 
-    Array64 readBlock(InputBitStream& stream){
+    Array64 readQuantizedArray(InputBitStream& stream){
         Array64 block;
         for(u32 idx = 0; idx < 64; idx++){
             u16 sign = stream.read_bit();
-            if(sign == 1){
-                block.at(idx) = -1 * stream.read_u16();
-            }else{
-                block.at(idx) = stream.read_u16();
-            }
+            int num = stream.read_u16();
+            block.at(idx) = (sign == 1) ? (-1*num) : num;
 
+            // prints
+            // std::cout << sign << num << " ";
+            // if(idx != 0 && idx%8==0)
+            //     std::cout << std::endl;
         }
-
         return block;
     }
 }

@@ -77,6 +77,8 @@ int main(int argc, char** argv){
     u16 height = input_image.height();
     u16 width = input_image.width();
 
+    std::cout << height << " " << width << std::endl;
+
     // configure bitstream
     std::ofstream output_file{output_filename,std::ios::binary};
     OutputBitStream output_stream {output_file};
@@ -92,6 +94,8 @@ int main(int argc, char** argv){
         }
     }
 
+    dct::print_image_YCbCr(imageYCbCr, height, width);
+
     // Separate Y Cb and Cr channels
     auto Y_matrix = create_2d_vector<unsigned char>(height, width);
     auto Cb_matrix = create_2d_vector<unsigned char>(height, width);
@@ -105,33 +109,40 @@ int main(int argc, char** argv){
     }
 
     // Downscale Cb and Cr color channels
-    unsigned int scaled_height = (height+2-1)/2;
-    unsigned int scaled_width = (width+2-1)/2;
+    unsigned int scaled_height = (height+1)/2;
+    unsigned int scaled_width = (width+1)/2;
     auto Cb_scaled = scale_down(Cb_matrix,width,height,2);
     auto Cr_scaled = scale_down(Cr_matrix,width,height,2);
 
-    // Partition colow channels into 8x8 blocks and fill
+    // Partition color channels into 8x8 blocks
     std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
     dct::partition_channel(Y_blocks, height, width, Y_matrix);
     dct::partition_channel(Cb_blocks, scaled_height, scaled_width, Cb_scaled);
     dct::partition_channel(Cr_blocks, scaled_height, scaled_width, Cr_scaled);
 
-    // std::cout << "Y blocks: " << Y_blocks.size() << std::endl;
-    // std::cout << "Cb blocks: " << Cb_blocks.size() << std::endl;
-    // std::cout << "Cr blocks: " << Cr_blocks.size() << std::endl;
+    std::cout << "Y" << std::endl;
+    dct::print_blocks(Y_blocks);
+    std::cout << "Cb" << std::endl;
+    dct::print_blocks(Cb_blocks);
+    std::cout << "Cr" << std::endl;
+    dct::print_blocks(Cr_blocks);
 
     for(Block8x8& curr_block : Y_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
-        stream::pushBlock(output_stream, dct::order_block(quantized_block));
+        stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
     }
     for(Block8x8& curr_block : Cb_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-        stream::pushBlock(output_stream, dct::order_block(quantized_block));
+        stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
     }
     for(Block8x8& curr_block : Cr_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-        stream::pushBlock(output_stream, dct::order_block(quantized_block));
+        stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
     }
+    // for(Block8x8& curr_block : Cb_blocks){
+    //     Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+    //     stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
+    // }
 
     output_stream.flush_to_byte();
     output_file.close();
