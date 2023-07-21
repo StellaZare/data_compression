@@ -77,8 +77,6 @@ int main(int argc, char** argv){
     u16 height = input_image.height();
     u16 width = input_image.width();
 
-    std::cout << height << " " << width << std::endl;
-
     // configure bitstream
     std::ofstream output_file{output_filename,std::ios::binary};
     OutputBitStream output_stream {output_file};
@@ -93,8 +91,6 @@ int main(int argc, char** argv){
             imageYCbCr.at(y).at(x) = rgb_pixel.to_ycbcr();            
         }
     }
-
-    dct::print_image_YCbCr(imageYCbCr, height, width);
 
     // Separate Y Cb and Cr channels
     auto Y_matrix = create_2d_vector<unsigned char>(height, width);
@@ -120,13 +116,6 @@ int main(int argc, char** argv){
     dct::partition_channel(Cb_blocks, scaled_height, scaled_width, Cb_scaled);
     dct::partition_channel(Cr_blocks, scaled_height, scaled_width, Cr_scaled);
 
-    std::cout << "Y" << std::endl;
-    dct::print_blocks(Y_blocks);
-    std::cout << "Cb" << std::endl;
-    dct::print_blocks(Cb_blocks);
-    std::cout << "Cr" << std::endl;
-    dct::print_blocks(Cr_blocks);
-
     for(Block8x8& curr_block : Y_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
         stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
@@ -139,10 +128,6 @@ int main(int argc, char** argv){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
         stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
     }
-    // for(Block8x8& curr_block : Cb_blocks){
-    //     Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-    //     stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
-    // }
 
     output_stream.flush_to_byte();
     output_file.close();
