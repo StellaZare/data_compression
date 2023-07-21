@@ -19,7 +19,7 @@ namespace dct{
         high            // 0.5 * quantize matrix    
     };
 
-    // enum for incrementation direction - used in get_direction() and order_block()
+    // enum for incrementation direction - used in get_direction() and block_to_array()
     enum Direction {
         right = 0,
         down,
@@ -86,6 +86,8 @@ namespace dct{
         {35, 36, 48, 49, 57, 58, 62, 63}
     }};
 
+    /* ----- Block Operations ----- */
+
     // returns the c_matrix for n = 8
     Block8x8 create_c_matrix(){
         Block8x8 c_matrix {};
@@ -117,11 +119,11 @@ namespace dct{
         std::cout << std::endl;
     }
     // prints 8x8 block to standard out
-    void print_block(const Block8x8& matrix){
+    void print_block(const Block8x8& block){
         for(u32 r = 0; r < 8; r++){
             std::cout << "{ ";
             for(u32 c = 0; c < 8; c++){
-                std::cout << matrix.at(r).at(c) << " ";
+                std::cout << block.at(r).at(c) << " ";
             }
             std::cout << "}" << std::endl;
         }
@@ -151,6 +153,8 @@ namespace dct{
                 transpose.at(c).at(r) = block.at(r).at(c);
         return transpose;
     }
+
+    /* ----- Compressor Functions ----- */
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
     void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> channel){
@@ -219,7 +223,8 @@ namespace dct{
         return curr;
     }
 
-    Array64 order_block(const Block8x8& block){
+    // converts an 8x8 block to an array of 64 elements in "ideal" order
+    Array64 block_to_array(const Block8x8& block){
         Direction dir;
         Array64 result;   
 
@@ -239,6 +244,76 @@ namespace dct{
             }
         }
         return result;
+    }
+
+    /* ----- Decompressor Functions ----- */
+
+    // converts an array of 64 elements in "ideal" order to an 8x8 block
+    Block8x8 array_to_block(const Array64& array){
+        Direction dir;
+        Block8x8 result;   
+
+        u32 r = 0, c = 0, count = 0;
+        while(r < 8 && c < 8){
+            result.at(r).at(c) = array.at(count++);
+            dir = get_direction(r, c, dir);
+
+            if(dir == right){
+                c++;
+            }else if(dir == down){
+                r++;
+            }else if(dir == down_left){
+                r++; c--;
+            }else{
+                r--; c++;
+            }
+        }
+        return result;
+    }
+
+    // returns the unquantized block calculated using the provided quantization matrix at the provided quality 
+    Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
+        double multiplier;
+        if(quality == low){
+            multiplier = 2;
+        }else if(quality == medium){
+            multiplier = 1;
+        }else{
+            multiplier = 0.5;
+        }
+
+        Block8x8 result;
+        for(u32 r = 0; r < 8; r++){
+            for(u32 c = 0; c < 8; c++){
+                result.at(r).at(c) = block.at(r).at(c) * (multiplier * q_matrix.at(r).at(c));
+            }
+        }
+        return result;
+    }
+
+    // returns the dct of block A by computing [C][A][C]_transpose
+    Block8x8 get_inverse_dct(const Block8x8& block){
+        Block8x8 result = multiply_block(c_matrix_transpose, block);
+        return multiply_block(result, c_matrix);
+    }
+
+    // given a vector of blocks in row major order color reconstructs the channel matrix
+    void undo_partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel){
+        u32 idx = 0;
+        for(u32 r = 0; r < height; r+=8){
+            for(u32 c = 0; c < width; c+=8){
+                Block8x8& current_block = blocks.at(idx++);
+                // index into 8x8 sub block
+                for(u32 sub_r = 0; sub_r < 8; sub_r++){
+                    for(u32 sub_c = 0; sub_c < 8; sub_c++){
+                        // copy element 
+                        if( (r+sub_r) < height && (c+sub_c) < width ){
+                            channel.at(r+sub_r).at(c+sub_c) = current_block.at(sub_r).at(sub_c);
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }
