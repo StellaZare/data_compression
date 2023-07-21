@@ -4,11 +4,13 @@
 #include <vector>
 #include <cmath>
 #include <array>
+#include "uvg_common.hpp"
 
 using Block8x8 = std::array<std::array<double, 8>, 8>;
 using Array64  = std::array<int, 64>;
 using u32 = std::uint32_t;
 using u16 = std::uint16_t;
+using u8 = std::uint8_t;
 
 namespace dct{
 
@@ -130,10 +132,10 @@ namespace dct{
     }
 
     // print image YCbCr given the height and width 
-    void print_matrix(const std::vector<std::vector<PixelYCbCr>>& image, u16 height, u16 width){
+    void print_image_YCbCr(const std::vector<std::vector<PixelYCbCr>>& image, u16 height, u16 width){
         for(u16 r = 0; r < height; r++){
             for(u16 c = 0; c < width; c++){
-                std::cout << "[" << image.at(r).at(c).Y << "," << image.at(r).at(c).Cb << "," << image.at(r).at(c).Cr << "]\t";
+                std::cout << "[" << (int)image.at(r).at(c).Y << "," << (int)image.at(r).at(c).Cb << "," << (int)image.at(r).at(c).Cr << "]\t";
             }
             std::cout << std::endl;
         }
@@ -318,7 +320,7 @@ namespace dct{
                     for(u32 sub_c = 0; sub_c < 8; sub_c++){
                         // copy element 
                         if( (r+sub_r) < height && (c+sub_c) < width ){
-                            channel.at(r+sub_r).at(c+sub_c) = current_block.at(sub_r).at(sub_c);
+                            channel.at(r+sub_r).at(c+sub_c) = round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
                         }
                     }
                 }
