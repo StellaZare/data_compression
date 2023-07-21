@@ -129,6 +129,16 @@ namespace dct{
         }
     }
 
+    // print image YCbCr given the height and width 
+    void print_matrix(const std::vector<std::vector<PixelYCbCr>>& image, u16 height, u16 width){
+        for(u16 r = 0; r < height; r++){
+            for(u16 c = 0; c < width; c++){
+                std::cout << "[" << image.at(r).at(c).Y << "," << image.at(r).at(c).Cb << "," << image.at(r).at(c).Cr << "]\t";
+            }
+            std::cout << std::endl;
+        }
+    }
+
     // returns the 8x8 block result of multiplying blockA by blockB
     Block8x8 multiply_block(const Block8x8& blockA, const Block8x8& blockB){
         Block8x8 result;
