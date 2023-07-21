@@ -79,6 +79,7 @@ int main(int argc, char** argv){
     for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
         Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
         block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
+        dct::print_block(block);
         Cr_blocks.push_back(block);
     }
 
