@@ -20,10 +20,12 @@
 #include <string>
 #include <cassert>
 #include <cstdint>
+#include <cmath>
 #include "input_stream.hpp"
 #include "bitmap_image.hpp"
 #include "uvg_common.hpp"
-
+#include "discrete_cosine_transform.hpp"
+#include "bit_stream.hpp"
 
 
 int main(int argc, char** argv){
@@ -38,37 +40,70 @@ int main(int argc, char** argv){
     std::ifstream input_file{input_filename,std::ios::binary};
     InputBitStream input_stream {input_file};
 
-    unsigned int height = input_stream.read_u32();
-    unsigned int width = input_stream.read_u32();
+    dct::Quality quality;
+    u16 height, width;
+    stream::readHeader(input_stream, quality, height, width);
+
+    // calculate number of Y_matrix blocks expected
+    u16 Y_blocks_wide = (width%8 == 0) ? width/8 : (width/8)+1;
+    u16 Y_blocks_high = (height%8 == 0) ? height/8 : (width/8)+1;
+    u16 num_Y_blocks = Y_blocks_wide * Y_blocks_high;
+
+    // calculate number of Cb and Cr blocks expected
+    u16 scaled_height = (height+1)/2;
+    u16 scaled_width = (width+1)/2; 
+    u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+    u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
+    u16 num_C_blocks = C_blocks_wide * C_blocks_high;
     
-    auto Y = create_2d_vector<unsigned char>(height,width);
-    auto Cb_scaled = create_2d_vector<unsigned char>((height+1)/2,(width+1)/2);
-    auto Cr_scaled = create_2d_vector<unsigned char>((height+1)/2,(width+1)/2);
+    // read blocks for each color channel in row major order
+    std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
+    for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
+        // std::cout << "decompressor" <<std::endl;
+        Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
+        // std::cout << "block" <<std::endl;
+        // dct::print_block(block);
+        block = dct::unquantize_block(block, quality, dct::luminance);
+        // std::cout << "unquantized" <<std::endl;
+        // dct::print_block(block);
+        block = dct::get_inverse_dct(block);
+        // std::cout << "inverse dct" <<std::endl;
+        // dct::print_block(block);
+        Y_blocks.push_back(block);
+    }
+    for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
+        Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
+        block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
+        Cb_blocks.push_back(block);
+    }
+    for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
+        Block8x8 block = dct::array_to_block(stream::readBlock(input_stream));
+        block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
+        Cr_blocks.push_back(block);
+    }
 
-    for (unsigned int y = 0; y < height; y++)
-        for (unsigned int x = 0; x < width; x++)
-            Y.at(y).at(x) = input_stream.read_byte();
+    // undo particitioning of channels into 8x8 blocks
+    auto Y_matrix = create_2d_vector<unsigned char>(height,width);
+    auto Cb_scaled = create_2d_vector<unsigned char>(scaled_height,scaled_width);
+    auto Cr_scaled = create_2d_vector<unsigned char>(scaled_height,scaled_width);
 
-    for (unsigned int y = 0; y < (height+1)/2; y++)
-        for (unsigned int x = 0; x < (width+1)/2; x++)
-            Cb_scaled.at(y).at(x) = input_stream.read_byte();
+    dct::undo_partition_channel(Y_blocks, height, width, Y_matrix);
+    dct::undo_partition_channel(Cb_blocks, scaled_height, scaled_width, Cb_scaled);
+    dct::undo_partition_channel(Cr_blocks, scaled_height, scaled_width, Cr_scaled);
 
-    for (unsigned int y = 0; y < (height+1)/2; y++)
-        for (unsigned int x = 0; x < (width+1)/2; x++)
-            Cr_scaled.at(y).at(x) = input_stream.read_byte();
-    
     auto imageYCbCr = create_2d_vector<PixelYCbCr>(height,width);
     for (unsigned int y = 0; y < height; y++){
         for (unsigned int x = 0; x < width; x++){
             imageYCbCr.at(y).at(x) = {
-                Y.at(y).at(x),
+                Y_matrix.at(y).at(x),
                 Cb_scaled.at(y/2).at(x/2),
                 Cr_scaled.at(y/2).at(x/2)
             };
         }
     }
-    
 
+    // dct::print_image_YCbCr(imageYCbCr, height, width);
+    
     input_stream.flush_to_byte();
     input_file.close();
 
