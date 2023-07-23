@@ -42,7 +42,7 @@ int main(int argc, char** argv){
 
     dct::Quality quality;
     u16 height, width;
-    stream::readHeader(input_stream, quality, height, width);
+    stream::read_header(input_stream, quality, height, width);
 
     // calculate number of Y_matrix blocks expected
     u16 Y_blocks_wide = (width%8 == 0) ? width/8 : (width/8)+1;
@@ -59,18 +59,18 @@ int main(int argc, char** argv){
     // read blocks for each color channel in row major order
     std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
     for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
-        Block8x8 block = dct::array_to_block(stream::readQuantizedArray(input_stream));
+        Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
         block = dct::unquantize_block(block, quality, dct::luminance);
         block = dct::get_inverse_dct(block);
         Y_blocks.push_back(block);
     }
     for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
-        Block8x8 block = dct::array_to_block(stream::readQuantizedArray(input_stream));
+        Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
         block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
         Cb_blocks.push_back(block);
     }
     for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
-        Block8x8 block = dct::array_to_block(stream::readQuantizedArray(input_stream));
+        Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
         block = dct::unquantize_block(block, quality, dct::chrominance);
         block = dct::get_inverse_dct( block );
         Cr_blocks.push_back(block);

@@ -80,7 +80,7 @@ int main(int argc, char** argv){
     // configure bitstream
     std::ofstream output_file{output_filename,std::ios::binary};
     OutputBitStream output_stream {output_file};
-    stream::pushHeader(output_stream, quality, height, width);
+    stream::push_header(output_stream, quality, height, width);
 
     //Read the entire image into a 2d array of PixelRGB objects 
     std::vector<std::vector<PixelYCbCr>> imageYCbCr = create_2d_vector<PixelYCbCr>(height,width);
@@ -118,15 +118,15 @@ int main(int argc, char** argv){
 
     for(Block8x8& curr_block : Y_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
-        stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
+        stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
     }
     for(Block8x8& curr_block : Cb_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-        stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
+        stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
     }
     for(Block8x8& curr_block : Cr_blocks){
         Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-        stream::pushQuantizedArray(output_stream, dct::block_to_array(quantized_block));
+        stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
     }
 
     output_stream.flush_to_byte();
