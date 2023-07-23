@@ -1,0 +1,11 @@
+build/
+build/
+build/
+
+my_tests/
+test_data/
+
+uvcompress
+uvgz
+uvg_compress
+uvg_decompress
