@@ -245,7 +245,7 @@ namespace dct{
 
     // converts an 8x8 block to an array of 64 elements in "ideal" order
     Array64 block_to_array(const Block8x8& block){
-        Direction dir;
+        Direction dir = right;
         Array64 result;   
 
         u32 r = 0, c = 0, count = 0;
@@ -270,7 +270,7 @@ namespace dct{
 
     // converts an array of 64 elements in "ideal" order to an 8x8 block
     Block8x8 array_to_block(const Array64& array){
-        Direction dir;
+        Direction dir = right;
         Block8x8 result;   
 
         u32 r = 0, c = 0, count = 0;
