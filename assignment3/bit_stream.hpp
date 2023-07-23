@@ -13,7 +13,6 @@ namespace stream{
     }
 
     void push_value(OutputBitStream& stream, int num){
-        // std::cout << "[" << num << "]" << std::endl;
         if(num < 0){
             // negative value push (1) value
             stream.push_bit(1);
@@ -28,7 +27,6 @@ namespace stream{
     }
 
     void push_delta_value(OutputBitStream& stream, int num){
-        // std::cout << "[" << num << "]";
         if(num > 0){
             // positive start with 10
             stream.push_bit(1);
@@ -39,17 +37,30 @@ namespace stream{
             stream.push_bit(1);
             num *= -1;
         }
-
         for(u16 i = 0; i < num-1; i++){
             stream.push_bit(1);
         }
         stream.push_bit(0);
     }
 
-    void push_quantized_array(OutputBitStream& stream, Array64 array){
+    void push_quantized_array(OutputBitStream& stream, const Array64& array){
         for(u32 idx = 0; idx < 64; idx++){
             push_value(stream, array.at(idx));
         }
+    }
+
+    u32 push_RLE_zeros(OutputBitStream& stream, const Array64& array, u32 start){
+        u32 idx = start; 
+        u32 count = 0;
+        while(idx < 64 && array.at(idx) == 0){
+            count++;
+            idx++;
+        }
+
+        // push initial 0 then count
+        stream.push_bit(0);
+        stream.push_bits(count, 6);
+        return count;
     }
 
     Array64 quantized_to_delta(const Array64& quantized){
@@ -63,16 +74,21 @@ namespace stream{
         return delta_values;
     }
 
-    void push_quantized_array_delta(OutputBitStream& stream, Array64 array){
+    void push_quantized_array_delta(OutputBitStream& stream, const Array64& array){
         Array64 delta_values = quantized_to_delta(array);
-        // dct::print_array(delta_values);
 
         // push first 2 as normal
         push_value(stream, delta_values.at(0));
         push_value(stream, delta_values.at(1));
-        
-        for(u32 idx = 2; idx < 64; idx++){
-            push_delta_value(stream, delta_values.at(idx));
+
+        u32 idx = 2;
+        while(idx < 64){
+            if(delta_values.at(idx) == 0){
+                idx += push_RLE_zeros(stream, delta_values, idx+1);
+            }else{
+                push_delta_value(stream, delta_values.at(idx));
+            }           
+            idx++;
         }
     }
 
@@ -98,7 +114,6 @@ namespace stream{
         sign = stream.read_bit();
         int num  = stream.read_u16();
         num = (sign == 1) ? (-1*num) : num ;
-        // std::cout << num << " ";
         return num;
     }
 
@@ -113,7 +128,6 @@ namespace stream{
             num++;
         }
         num = (sign == 1) ? -1*(num) : num;
-        // std::cout << num << " ";
         return num;
     }
 
@@ -136,14 +150,29 @@ namespace stream{
         return quantized;
     }
 
+    void add_RLE_zeros(Array64& delta_values, u32 start, u32 count){
+        for(u32 idx = start; idx < 64 && idx < start+count; idx++){
+            delta_values.at(idx) = 0;
+        }
+    }
+
     Array64 read_quantized_array_delta(InputBitStream& stream){
         Array64 delta_values;
         delta_values.at(0) = read_value(stream); 
         delta_values.at(1) = read_value(stream); 
 
-        for(u32 idx = 2; idx < 64; idx++){
-            delta_values.at(idx) = read_delta_value(stream);
+        u32 idx = 2;
+        while(idx < 64){
+            int delta = read_delta_value(stream);
+            delta_values.at(idx) = delta;
+            idx++;
+            if(delta == 0){
+                u32 count = stream.read_bits(6);
+                add_RLE_zeros(delta_values, idx, count);
+                idx+=count;
+            }
         }
+
         Array64 quantized = delta_to_quantized(delta_values);
         return quantized;
     }
