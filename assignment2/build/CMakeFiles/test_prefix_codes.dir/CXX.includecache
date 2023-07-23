@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/zareistella/Desktop/csc485/assignment2/output_stream.hpp
+iostream
+-
+cstdint
+-
+
+/home/zareistella/Desktop/csc485/assignment2/prefix_codes.hpp
+output_stream.hpp
+/home/zareistella/Desktop/csc485/assignment2/output_stream.hpp
+iostream
+-
+unordered_map
+-
+string
+-
+bitset
+-
+vector
+-
+cmath
+-
+stdexcept
+-
+cassert
+-
+algorithm
+-
+
+/home/zareistella/Desktop/csc485/assignment2/test_prefix_codes.cpp
+prefix_codes.hpp
+/home/zareistella/Desktop/csc485/assignment2/prefix_codes.hpp
+cassert
+-
+iostream
+-
+

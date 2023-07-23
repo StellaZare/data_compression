@@ -1,0 +1,5 @@
+/home/zareistella/Desktop/csc485/assignment2/build/CMakeFiles/rebuild_cache.dir
+/home/zareistella/Desktop/csc485/assignment2/build/CMakeFiles/edit_cache.dir
+/home/zareistella/Desktop/csc485/assignment2/build/CMakeFiles/uvgz.dir
+/home/zareistella/Desktop/csc485/assignment2/build/CMakeFiles/test_type_two.dir
+/home/zareistella/Desktop/csc485/assignment2/build/CMakeFiles/test_prefix_codes.dir

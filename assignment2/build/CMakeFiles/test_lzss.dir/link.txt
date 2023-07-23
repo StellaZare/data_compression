@@ -1,0 +1,1 @@
+/usr/bin/c++  -g -Wall -Wextra   CMakeFiles/test_lzss.dir/LZSSEncoderTest.cpp.o  -o test_lzss 
