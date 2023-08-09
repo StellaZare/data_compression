@@ -318,11 +318,11 @@ namespace dct{
     }
 
     // given a vector of blocks in row major order color reconstructs the channel matrix
-    void undo_partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel){
+    void undo_partition_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel){
         u32 idx = 0;
         for(u32 r = 0; r < height; r+=8){
             for(u32 c = 0; c < width; c+=8){
-                Block8x8& current_block = blocks.at(idx++);
+                const Block8x8& current_block = blocks.at(idx++);
                 // index into 8x8 sub block
                 for(u32 sub_r = 0; sub_r < 8; sub_r++){
                     for(u32 sub_c = 0; sub_c < 8; sub_c++){
