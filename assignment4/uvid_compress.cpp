@@ -24,7 +24,9 @@
 #include <cstdint>
 #include <tuple>
 #include "output_stream.hpp"
+#include "stream.hpp"
 #include "yuv_stream.hpp"
+#include "discrete_cosine_transform.hpp"
 
 
 int main(int argc, char** argv){
@@ -35,26 +37,62 @@ int main(int argc, char** argv){
     }
     u32 width = std::stoi(argv[1]);
     u32 height = std::stoi(argv[2]);
-    std::string quality{argv[3]};
+    std::string input_quality{argv[3]};
+
+    // configure quality settings
+    dct::Quality quality;
+    if(input_quality == "low"){
+        quality = dct::Quality::low;
+    }else if(input_quality == "medium"){
+        quality = dct::Quality::medium;
+    }else if(input_quality == "high"){
+        quality = dct::Quality::high;
+    }else{
+        std::cerr << "Usage: " << argv[0] << " <low/medium/high> <input BMP> <output file>" << std::endl;
+        return 1;
+    }
 
     YUVStreamReader reader {std::cin, width, height};
     OutputBitStream output_stream {std::cout};
 
-    output_stream.push_u32(height);
-    output_stream.push_u32(width);
+    stream::push_header(output_stream, quality, height, width);
 
     while (reader.read_next_frame()){
         output_stream.push_byte(1); //Use a one byte flag to indicate whether there is a frame here
         YUVFrame420& frame = reader.frame();
+
+        // Separate Y Cb and Cr channels
+        auto Y_matrix = helper::create_2d_vector<unsigned char>(height, width);
+        auto Cb_matrix = helper::create_2d_vector<unsigned char>(height/2, width/2);
+        auto Cr_matrix = helper::create_2d_vector<unsigned char>(height/2, width/2);
+
         for (u32 y = 0; y < height; y++)
             for (u32 x = 0; x < width; x++)
-                output_stream.push_byte(frame.Y(x,y));
+                Y_matrix.at(y).at(x) = frame.Y(x,y);
         for (u32 y = 0; y < height/2; y++)
-            for (u32 x = 0; x < width/2; x++)
-                output_stream.push_byte(frame.Cb(x,y));
-        for (u32 y = 0; y < height/2; y++)
-            for (u32 x = 0; x < width/2; x++)
-                output_stream.push_byte(frame.Cr(x,y));
+            for (u32 x = 0; x < width/2; x++){
+                Cb_matrix.at(y).at(x) = frame.Cb(x,y);
+                Cr_matrix.at(y).at(x) = frame.Cr(x,y);
+            }
+        
+        // Partition color channels into 8x8 blocks
+        std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
+        dct::partition_channel(Y_blocks, height, width, Y_matrix);
+        dct::partition_channel(Cb_blocks, height/2, width/2, Cb_matrix);
+        dct::partition_channel(Cr_blocks, height/2, width/2, Cr_matrix);
+
+        for(Block8x8& curr_block : Y_blocks){
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+        }
+        for(Block8x8& curr_block : Cb_blocks){
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+        }
+        for(Block8x8& curr_block : Cr_blocks){
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+        }
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data
