@@ -35,8 +35,8 @@ int main(int argc, char** argv){
         std::cerr << "Usage: " << argv[0] << " <width> <height> <low/medium/high>" << std::endl;
         return 1;
     }
-    u32 width = std::stoi(argv[1]);
-    u32 height = std::stoi(argv[2]);
+    u16 width = std::stoi(argv[1]);
+    u16 height = std::stoi(argv[2]);
     std::string input_quality{argv[3]};
 
     // configure quality settings
@@ -83,15 +83,18 @@ int main(int argc, char** argv){
 
         for(Block8x8& curr_block : Y_blocks){
             Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
-            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Array64 block_data = dct::block_to_array(quantized_block);
+            stream::push_quantized_array_delta(output_stream, block_data);
         }
         for(Block8x8& curr_block : Cb_blocks){
             Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Array64 block_data = dct::block_to_array(quantized_block);
+            stream::push_quantized_array_delta(output_stream, block_data);
         }
         for(Block8x8& curr_block : Cr_blocks){
             Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Array64 block_data = dct::block_to_array(quantized_block);
+            stream::push_quantized_array_delta(output_stream, block_data);
         }
     }
 

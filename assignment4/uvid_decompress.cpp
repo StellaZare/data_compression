@@ -24,6 +24,8 @@
 #include <tuple>
 #include "input_stream.hpp"
 #include "yuv_stream.hpp"
+#include "discrete_cosine_transform.hpp"
+#include "stream.hpp"
 
 
 int main(int argc, char** argv){
@@ -33,25 +35,65 @@ int main(int argc, char** argv){
     
     InputBitStream input_stream {std::cin};
 
-    u32 height {input_stream.read_u32()};
-    u32 width {input_stream.read_u32()};
+    dct::Quality quality;
+    u16 height, width;
+    stream::read_header(input_stream, quality, height, width);
 
     YUVStreamWriter writer {std::cout, width, height};
 
+    // calculate number of Y_matrix blocks expected
+    u16 Y_blocks_wide = (width%8 == 0) ? width/8 : (width/8)+1;
+    u16 Y_blocks_high = (height%8 == 0) ? height/8 : (height/8)+1;
+    u16 num_Y_blocks = Y_blocks_wide * Y_blocks_high;
+
+    // calculate number of Cb and Cr blocks expected
+    u16 scaled_height = height/2;
+    u16 scaled_width = width/2; 
+    u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+    u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
+    u16 num_C_blocks = C_blocks_wide * C_blocks_high;
+
     while (input_stream.read_byte()){
         YUVFrame420& frame = writer.frame();
+        // read blocks for each color channel in row major order
+        std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
+        for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
+            Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            block = dct::unquantize_block(block, quality, dct::luminance);
+            block = dct::get_inverse_dct(block);
+            Y_blocks.push_back(block);
+        }
+        for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
+            Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
+            Cb_blocks.push_back(block);
+        }
+        for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
+            Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            block = dct::unquantize_block(block, quality, dct::chrominance);
+            block = dct::get_inverse_dct( block );
+            Cr_blocks.push_back(block);
+        }
+
+        auto Y_matrix = helper::create_2d_vector<unsigned char>(height,width);
+        auto Cb_matrix = helper::create_2d_vector<unsigned char>(height/2 ,width/2);
+        auto Cr_matrix = helper::create_2d_vector<unsigned char>(height/2 ,width/2);
+
+        dct::undo_partition_channel(Y_blocks, height, width, Y_matrix);
+        dct::undo_partition_channel(Cb_blocks, height/2 ,width/2, Cb_matrix);
+        dct::undo_partition_channel(Cr_blocks, height/2 ,width/2, Cr_matrix);
+
+        // Create and fill frame
+        writer.write_frame();
         for (u32 y = 0; y < height; y++)
             for (u32 x = 0; x < width; x++)
-                frame.Y(x,y) = input_stream.read_byte();
+                frame.Y(x,y) = Y_matrix.at(y).at(x);
         for (u32 y = 0; y < height/2; y++)
-            for (u32 x = 0; x < width/2; x++)
-                frame.Cb(x,y) = input_stream.read_byte();
-        for (u32 y = 0; y < height/2; y++)
-            for (u32 x = 0; x < width/2; x++)
-                frame.Cr(x,y) = input_stream.read_byte();
-        writer.write_frame();
+            for (u32 x = 0; x < width/2; x++){
+                frame.Cb(x,y) = Cb_matrix.at(y).at(x);
+                frame.Cr(x,y) = Cr_matrix.at(y).at(x);
+            }
     }
-
 
     return 0;
 }
