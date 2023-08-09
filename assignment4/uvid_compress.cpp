@@ -52,7 +52,7 @@ int main(int argc, char** argv){
     stream::push_header(output_stream, quality, height, width);
 
     YUVFrame420 prev_frame {width, height};
-    u32 num_frames = 0;
+    u32 num_frames = 0; 
 
     while (reader.read_next_frame()){
         output_stream.push_byte(1); // 1=Iframe or 2=Pframe
@@ -100,7 +100,7 @@ int main(int argc, char** argv){
             stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
             Cr_uncompressed.push_back(helper::simulate_decompressor(quantized_block, quality, dct::chrominance));
         }
-        
+
         // Update the prev_frame as seen by the decompressor
         prev_frame = helper::reconstruct_frame(height, width, Y_uncompressed, Cb_uncompressed, Cr_uncompressed);
     }

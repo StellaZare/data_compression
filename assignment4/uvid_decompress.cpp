@@ -60,20 +60,15 @@ int main(int argc, char** argv){
         std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
         for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
             Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-            block = dct::unquantize_block(block, quality, dct::luminance);
-            block = dct::get_inverse_dct(block);
-            Y_blocks.push_back(block);
+            Y_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(block, quality, dct::luminance)));
         }
         for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
             Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-            block = dct::get_inverse_dct( dct::unquantize_block(block, quality, dct::chrominance) );
-            Cb_blocks.push_back(block);
+            Cb_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(block, quality, dct::chrominance)));
         }
         for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
             Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-            block = dct::unquantize_block(block, quality, dct::chrominance);
-            block = dct::get_inverse_dct( block );
-            Cr_blocks.push_back(block);
+            Cr_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(block, quality, dct::chrominance)));
         }
 
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height,width);
