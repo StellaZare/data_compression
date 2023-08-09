@@ -11,6 +11,34 @@ using u32 = std::uint32_t;
 using u16 = std::uint16_t;
 using u8 = std::uint8_t;
 
+namespace helper{
+    /* ----- Helper Functions - written by Bill ----- */
+    
+    //The floating point calculations we use while converting between 
+    //RGB and YCbCr can occasionally yield values slightly out of range
+    //for an unsigned char (e.g. -1 or 255.9).
+    //Furthermore, we want to ensure that any conversion uses rounding
+    //and not truncation (to improve accuracy).
+    inline unsigned char round_and_clamp_to_char(double v){
+        //Round to int 
+        int i = (int)(v+0.5);
+        //Clamp to the range [0,255]
+        if (i < 0)
+            return 0;
+        else if (i > 255)
+            return 255;
+        return i;
+    }
+
+    //Convenience function to wrap around the nasty notation for 2d vectors
+    //Convenience function to wrap around the nasty notation for 2d vectors
+    template<typename T>
+    std::vector<std::vector<T> > create_2d_vector(unsigned int outer, unsigned int inner){
+        std::vector<std::vector<T> > V {outer, std::vector<T>(inner,T() )};
+        return V;
+    }
+}
+
 namespace dct{
 
     // enum for quality level - used in quantize_block()
@@ -87,24 +115,6 @@ namespace dct{
         {35, 36, 48, 49, 57, 58, 62, 63}
     }};
 
-    /* ----- Helper Function ----- */
-    
-    //The floating point calculations we use while converting between 
-    //RGB and YCbCr can occasionally yield values slightly out of range
-    //for an unsigned char (e.g. -1 or 255.9).
-    //Furthermore, we want to ensure that any conversion uses rounding
-    //and not truncation (to improve accuracy).
-    inline unsigned char round_and_clamp_to_char(double v){
-        //Round to int 
-        int i = (int)(v+0.5);
-        //Clamp to the range [0,255]
-        if (i < 0)
-            return 0;
-        else if (i > 255)
-            return 255;
-        return i;
-    }
-
     /* ----- Block Operations ----- */
 
     // returns the c_matrix for n = 8
@@ -153,16 +163,6 @@ namespace dct{
         for(const Block8x8& b : blocks){
             std::cout << "-------" << std::endl;
             print_block(b);
-        }
-    }
-
-    // print image YCbCr given the height and width 
-    void print_image_YCbCr(const std::vector<std::vector<PixelYCbCr>>& image, u16 height, u16 width){
-        for(u16 r = 0; r < height; r++){
-            for(u16 c = 0; c < width; c++){
-                std::cout << "[" << (int)image.at(r).at(c).Y << "," << (int)image.at(r).at(c).Cb << "," << (int)image.at(r).at(c).Cr << "]\t";
-            }
-            std::cout << std::endl;
         }
     }
 
@@ -345,7 +345,7 @@ namespace dct{
                     for(u32 sub_c = 0; sub_c < 8; sub_c++){
                         // copy element 
                         if( (r+sub_r) < height && (c+sub_c) < width ){
-                            channel.at(r+sub_r).at(c+sub_c) = round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
+                            channel.at(r+sub_r).at(c+sub_c) = helper::round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
                         }
                     }
                 }
