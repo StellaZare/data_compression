@@ -8,8 +8,8 @@ namespace stream{
 
     void push_header(OutputBitStream& stream, dct::Quality q, u16 height, u16 width){
         stream.push_bits(q, 2);
-        stream.push_u32(height);
-        stream.push_u32(width);
+        stream.push_u16(height);
+        stream.push_u16(width);
     }
 
     void push_value(OutputBitStream& stream, int num){
@@ -104,8 +104,8 @@ namespace stream{
             quality = dct::Quality::high;
         }
 
-       height = stream.read_u32();
-       width = stream.read_u32();
+       height = stream.read_u16();
+       width = stream.read_u16();
     }
 
     int read_value(InputBitStream& stream){
