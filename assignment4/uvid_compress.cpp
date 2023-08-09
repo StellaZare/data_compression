@@ -100,7 +100,8 @@ int main(int argc, char** argv){
             stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
             Cr_uncompressed.push_back(helper::simulate_decompressor(quantized_block, quality, dct::chrominance));
         }
-
+        
+        // Update the prev_frame as seen by the decompressor
         prev_frame = helper::reconstruct_frame(height, width, Y_uncompressed, Cb_uncompressed, Cr_uncompressed);
     }
 
