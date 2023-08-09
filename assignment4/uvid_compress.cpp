@@ -40,7 +40,7 @@ int main(int argc, char** argv){
     // Parse command line arguments
     u16 width = std::stoi(argv[1]);
     u16 height = std::stoi(argv[2]);
-    dct::Quality quality = dct::get_quality(argv[3]);
+    dct::Quality quality = helper::get_quality(argv[3]);
     if(quality == dct::Quality::ERROR){
         std::cerr << "Usage: " << argv[0] << " <width> <height> <low/medium/high>" << std::endl;
         return 1;

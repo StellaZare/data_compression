@@ -3,22 +3,6 @@
 namespace helper{
     
     /* ----- Helper Functions - written by Bill ----- */
-    //The floating point calculations we use while converting between 
-    //RGB and YCbCr can occasionally yield values slightly out of range
-    //for an unsigned char (e.g. -1 or 255.9).
-    //Furthermore, we want to ensure that any conversion uses rounding
-    //and not truncation (to improve accuracy).
-    inline unsigned char round_and_clamp_to_char(double v){
-        //Round to int 
-        int i = (int)(v+0.5);
-        //Clamp to the range [0,255]
-        if (i < 0)
-            return 0;
-        else if (i > 255)
-            return 255;
-        return i;
-    }
-
     //Convenience function to wrap around the nasty notation for 2d vectors
     //Convenience function to wrap around the nasty notation for 2d vectors
     template<typename T>

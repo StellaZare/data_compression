@@ -87,7 +87,17 @@ namespace dct{
         {21, 34, 37, 47, 50, 56, 59, 61},
         {35, 36, 48, 49, 57, 58, 62, 63}
     }};
-
+    /* ----- Written by Bill ------ */
+    inline unsigned char round_and_clamp_to_char(double v){
+        //Round to int 
+        int i = (int)(v+0.5);
+        //Clamp to the range [0,255]
+        if (i < 0)
+            return 0;
+        else if (i > 255)
+            return 255;
+        return i;
+    }
     /* ----- Block Operations ----- */
 
     // returns the c_matrix for n = 8
@@ -318,7 +328,7 @@ namespace dct{
                     for(u32 sub_c = 0; sub_c < 8; sub_c++){
                         // copy element 
                         if( (r+sub_r) < height && (c+sub_c) < width ){
-                            channel.at(r+sub_r).at(c+sub_c) = helper::round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
+                            channel.at(r+sub_r).at(c+sub_c) = round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
                         }
                     }
                 }

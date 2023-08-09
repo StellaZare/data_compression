@@ -26,6 +26,7 @@
 #include "yuv_stream.hpp"
 #include "discrete_cosine_transform.hpp"
 #include "stream.hpp"
+#include "helper.hpp"
 
 
 int main(int argc, char** argv){
