@@ -77,8 +77,8 @@ int main(){
     }
     
     if (block_size > 0){
-        //encodeTypeOne(stream, block_size, block_contents, 1); 
-        encodeTypeTwo(stream, block_size, block_contents, 1);      
+        encodeTypeOne(stream, block_size, block_contents, 1); 
+        //encodeTypeTwo(stream, block_size, block_contents, 1);      
     }
 
     pushFileFooter(stream, crc, bytes_read);

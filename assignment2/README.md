@@ -15,6 +15,7 @@ The function _encodeTypeOne_ encodes the chunk of data using Block Type 1 by ini
 Similarly, the function _encodeTypeTwo_ encodes the chunk of data using Block Type 2 by initializing a _TypeTwoEncoder_ object and calling the _Encode_ member function.
 <br></br>
 Finally, after encoding the chunk of data, the call to _pushFileFooter_ flushes to the next byte boundary then pushes the crc and bytes read value to the stream.
+Full blocks are encoded with block type two as the large amout of data may justify the additional overheead of type 2. Incomplete blocks are encdoded with block type 1 to limit the expantion for cases like abc.txt or banana.txt.
 <br></br>
 
 ## TypeOneEncoder.hpp

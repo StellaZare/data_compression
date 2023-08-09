@@ -1,0 +1,13 @@
+build/
+my_tests/
+test_data/
+.DS_Store
+.vscode/
+my_compressed/
+my_decompressed/
+compressed/
+decompressed/
+videos/
+
+
+
