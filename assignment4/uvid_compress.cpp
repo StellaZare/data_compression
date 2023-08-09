@@ -35,20 +35,13 @@ int main(int argc, char** argv){
         std::cerr << "Usage: " << argv[0] << " <width> <height> <low/medium/high>" << std::endl;
         return 1;
     }
+
+    // Parse command line arguments
     u16 width = std::stoi(argv[1]);
     u16 height = std::stoi(argv[2]);
-    std::string input_quality{argv[3]};
-
-    // configure quality settings
-    dct::Quality quality;
-    if(input_quality == "low"){
-        quality = dct::Quality::low;
-    }else if(input_quality == "medium"){
-        quality = dct::Quality::medium;
-    }else if(input_quality == "high"){
-        quality = dct::Quality::high;
-    }else{
-        std::cerr << "Usage: " << argv[0] << " <low/medium/high> <input BMP> <output file>" << std::endl;
+    dct::Quality quality = dct::get_quality(argv[3]);
+    if(quality == dct::Quality::ERROR){
+        std::cerr << "Usage: " << argv[0] << " <width> <height> <low/medium/high>" << std::endl;
         return 1;
     }
 

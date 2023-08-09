@@ -45,8 +45,20 @@ namespace dct{
     enum Quality {
         low = 0,        // 2 * quantize matrix   
         medium,         // 1 * quantize matrix     
-        high            // 0.5 * quantize matrix    
+        high,           // 0.5 * quantize matrix 
+        ERROR   
     };
+
+    Quality get_quality(std::string input_quality){
+        if(input_quality == "low")
+            return dct::Quality::low;
+        else if(input_quality == "medium")
+            return dct::Quality::medium;
+        else if(input_quality == "high")
+            return dct::Quality::high;
+        else
+            return dct::Quality::ERROR;
+    }
 
     // enum for incrementation direction - used in get_direction() and block_to_array()
     enum Direction {
