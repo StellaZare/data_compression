@@ -51,9 +51,13 @@ int main(int argc, char** argv){
 
     stream::push_header(output_stream, quality, height, width);
 
+    YUVFrame420 prev_frame {width, height};
+    u32 num_frames = 0;
+
     while (reader.read_next_frame()){
-        output_stream.push_byte(1); //Use a one byte flag to indicate whether there is a frame here
-        YUVFrame420& frame = reader.frame();
+        output_stream.push_byte(1); // 1=Iframe or 2=Pframe
+        
+        YUVFrame420& active_frame = reader.frame();
 
         // Separate Y Cb and Cr channels
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height, width);
@@ -62,11 +66,11 @@ int main(int argc, char** argv){
 
         for (u32 y = 0; y < height; y++)
             for (u32 x = 0; x < width; x++)
-                Y_matrix.at(y).at(x) = frame.Y(x,y);
+                Y_matrix.at(y).at(x) = active_frame.Y(x,y);
         for (u32 y = 0; y < height/2; y++)
             for (u32 x = 0; x < width/2; x++){
-                Cb_matrix.at(y).at(x) = frame.Cb(x,y);
-                Cr_matrix.at(y).at(x) = frame.Cr(x,y);
+                Cb_matrix.at(y).at(x) = active_frame.Cb(x,y);
+                Cr_matrix.at(y).at(x) = active_frame.Cr(x,y);
             }
         
         // Partition color channels into 8x8 blocks
@@ -75,21 +79,29 @@ int main(int argc, char** argv){
         dct::partition_channel(Cb_blocks, height/2, width/2, Cb_matrix);
         dct::partition_channel(Cr_blocks, height/2, width/2, Cr_matrix);
 
+        // To store uncompressed blocks 
+        std::vector<Block8x8> Y_uncompressed, Cb_uncompressed, Cr_uncompressed;
+
         for(Block8x8& curr_block : Y_blocks){
+            // Take the DCT and quantize
             Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
-            Array64 block_data = dct::block_to_array(quantized_block);
-            stream::push_quantized_array_delta(output_stream, block_data);
+            // Push in array format
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            // Unquantize and take the inverse DCT
+            Y_uncompressed.push_back(helper::simulate_decompressor(quantized_block, quality, dct::luminance));
         }
         for(Block8x8& curr_block : Cb_blocks){
             Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-            Array64 block_data = dct::block_to_array(quantized_block);
-            stream::push_quantized_array_delta(output_stream, block_data);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Cb_uncompressed.push_back(helper::simulate_decompressor(quantized_block, quality, dct::chrominance));
         }
         for(Block8x8& curr_block : Cr_blocks){
             Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-            Array64 block_data = dct::block_to_array(quantized_block);
-            stream::push_quantized_array_delta(output_stream, block_data);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Cr_uncompressed.push_back(helper::simulate_decompressor(quantized_block, quality, dct::chrominance));
         }
+
+        prev_frame = helper::reconstruct_frame(height, width, Y_uncompressed, Cb_uncompressed, Cr_uncompressed);
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data
