@@ -1,5 +1,10 @@
+#include <queue>
+#include <vector>
+#include <string>
 #include "discrete_cosine_transform.hpp"
 #include "yuv_stream.hpp"
+#include "output_stream.hpp"
+#include "stream.hpp"
 
 namespace helper{
     
@@ -53,4 +58,39 @@ namespace helper{
     //         }
     //     return frame;
     // }
+
+    void process_I_frame(const std::vector<Block8x8>& Y_blocks, const std::vector<Block8x8>& Cb_blocks, const std::vector<Block8x8>& Cr_blocks,
+    std::queue<Block8x8>& Y_uncompressed, std::queue<Block8x8>& Cb_uncompressed, std::queue<Block8x8>& Cr_uncompressed, dct::Quality quality, OutputBitStream& output_stream){
+
+        // Push flag
+        output_stream.push_byte(1);
+
+        // I-frames do not use the prev-data
+        while(!Y_uncompressed.empty())
+            Y_uncompressed.pop();
+        while(!Cb_uncompressed.empty())
+            Cb_uncompressed.pop();
+        while(!Cr_uncompressed.empty())
+            Cr_uncompressed.pop();
+
+        // Push active frame data
+        for(const Block8x8& curr_block : Y_blocks){
+            // Take the DCT and quantize
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
+            // Push in array format
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            // Unquantize and take the inverse DCT
+            Y_uncompressed.push(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::luminance)));
+        }
+        for(const Block8x8& curr_block : Cb_blocks){
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Cb_uncompressed.push(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance)));
+        }
+        for(const Block8x8& curr_block : Cr_blocks){
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
+            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
+            Cr_uncompressed.push(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance)));
+        }
+    }
 }
