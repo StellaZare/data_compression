@@ -6,6 +6,7 @@ project(assignment4 LANGUAGES CXX)
 
 # Include directories
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/app")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -std=c++20")
 
