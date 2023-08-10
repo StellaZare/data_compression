@@ -1,4 +1,4 @@
-#include "dct.hpp"
+#include "discrete_cosine_transform.hpp"
 #include <iostream>
 
 namespace dct{

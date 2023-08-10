@@ -99,7 +99,7 @@ namespace dct {
     }
 
     /* ----- Block Operations ----- */
-    const Block8x8 create_c_matrix();
+    Block8x8 create_c_matrix();
     void print_array(const Array64 &array);
     void print_block(const Block8x8 &block);
     void print_blocks(const std::vector<Block8x8> &blocks);
