@@ -177,7 +177,7 @@ namespace dct{
     /* ----- Compressor Functions ----- */
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
-    void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> channel){
+    void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel){
         for(u32 r = 0; r < height; r+=8){
             for(u32 c = 0; c < width; c+=8){
                 Block8x8 current_block;
