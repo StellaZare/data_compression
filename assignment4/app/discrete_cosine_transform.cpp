@@ -78,6 +78,24 @@ namespace dct{
         return transpose;
     }
 
+    // Returns the 8x8 block of delta values of block1 - block2
+    Block8x8 get_delta_block(const Block8x8& block1, const Block8x8& block2){
+        Block8x8 delta;
+        for (u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                delta.at(r).at(c) = block1.at(r).at(c) - block2.at(r).at(c);
+        return delta;
+    }
+
+    // Returns the 8x8 block of adding the delta values to the block
+    Block8x8 add_delta_block(const Block8x8& block, const Block8x8& delta){
+        Block8x8 result;
+        for (u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                result.at(r).at(c) = block.at(r).at(c) + delta.at(r).at(c);
+        return result;
+    }
+
     /* ----- Compressor Functions ----- */
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order

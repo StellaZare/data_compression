@@ -100,24 +100,26 @@ namespace dct {
 
     /* ----- Block Operations ----- */
     Block8x8 create_c_matrix();
-    void print_array(const Array64 &array);
-    void print_block(const Block8x8 &block);
-    void print_blocks(const std::vector<Block8x8> &blocks);
-    Block8x8 multiply_block(const Block8x8 &blockA, const Block8x8 &blockB);
-    Block8x8 transpose_block(const Block8x8 &block);
+    void print_array(const Array64& array);
+    void print_block(const Block8x8& block);
+    void print_blocks(const std::vector<Block8x8>& blocks);
+    Block8x8 multiply_block(const Block8x8& blockA, const Block8x8& blockB);
+    Block8x8 transpose_block(const Block8x8& block);
+    Block8x8 get_delta_block(const Block8x8& block1, const Block8x8& block2);
+    Block8x8 add_delta_block(const Block8x8& block, const Block8x8& delta);
 
     /* ----- Compressor Functions ----- */
-    void partition_channel(std::vector<Block8x8> &blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>> &channel);
+    void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
     Block8x8 get_dct(const Block8x8 &block);
-    Block8x8 quantize_block(const Block8x8 &block, Quality quality, const Block8x8 &q_matrix);
+    Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
     Direction get_direction(u32 r, u32 c, Direction curr);
-    Array64 block_to_array(const Block8x8 &block);
+    Array64 block_to_array(const Block8x8& block);
 
     /* ----- Decompressor Functions ----- */
-    Block8x8 array_to_block(const Array64 &array);
-    Block8x8 unquantize_block(const Block8x8 &block, Quality quality, const Block8x8 &q_matrix);
-    Block8x8 get_inverse_dct(const Block8x8 &block);
-    void undo_partition_channel(const std::vector<Block8x8> &blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>> &channel);
+    Block8x8 array_to_block(const Array64& array);
+    Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
+    Block8x8 get_inverse_dct(const Block8x8& block);
+    void undo_partition_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);
 
 } // namespace dct
 
