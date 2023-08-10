@@ -139,19 +139,8 @@ namespace helper{
     }
 
     /* -----Decompressor code ----- */
-    void decompress_I_frame(u16 width, u16 height, std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks,
+    void decompress_I_frame(u16 num_Y_blocks, u16 num_C_blocks, std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks,
     std::queue<Block8x8>& Y_uncompressed, std::queue<Block8x8>& Cb_uncompressed, std::queue<Block8x8>& Cr_uncompressed, dct::Quality quality, InputBitStream& input_stream){
-        // calculate number of Y_matrix blocks expected
-        u16 Y_blocks_wide = (width%8 == 0) ? width/8 : (width/8)+1;
-        u16 Y_blocks_high = (height%8 == 0) ? height/8 : (height/8)+1;
-        u16 num_Y_blocks = Y_blocks_wide * Y_blocks_high;
-
-        // calculate number of Cb and Cr blocks expected
-        u16 scaled_height = height/2;
-        u16 scaled_width = width/2; 
-        u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
-        u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
-        u16 num_C_blocks = C_blocks_wide * C_blocks_high;
 
         // I-frames do not use the prev-data
         while(!Y_uncompressed.empty())
@@ -163,7 +152,7 @@ namespace helper{
 
         // Push active frame data
         for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
-            // Create a block
+            // Read a block
             Block8x8 block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
             // Unquantize and take the inverse dct
             block = dct::get_inverse_dct(dct::unquantize_block(block, quality, dct::luminance));
@@ -183,6 +172,51 @@ namespace helper{
             block = dct::get_inverse_dct(dct::unquantize_block(block, quality, dct::chrominance));
             Cr_blocks.push_back(block);
             Cr_uncompressed.push(block);
+        }
+    }
+
+    void decompress_P_frame(u16 num_Y_blocks, u16 num_C_blocks, std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks,
+    std::queue<Block8x8>& Y_uncompressed, std::queue<Block8x8>& Cb_uncompressed, std::queue<Block8x8>& Cr_uncompressed, dct::Quality quality, InputBitStream& input_stream){
+
+        // Push active frame data
+        for(u16 blocks_read = 0; blocks_read < num_Y_blocks; blocks_read++){
+            // Create a block of delta values
+            Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            // Unquantize and take the inverse dct
+            delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::luminance));
+            // Get the prev_block
+            Block8x8& prev_block = Y_uncompressed.front();
+            Block8x8 block = dct::add_delta_block(prev_block, delta_block);
+            // Push to active frame
+            Y_blocks.push_back(block);
+            // Save for later
+            Y_uncompressed.push(block);
+            // Remove used prev_block
+            Y_uncompressed.pop();
+        }
+        for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
+            Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::chrominance));
+            Block8x8& prev_block = Cb_uncompressed.front();
+            Block8x8 block = dct::add_delta_block(prev_block, delta_block);
+            // Push to active frame
+            Cb_blocks.push_back(block);
+            // Save for later
+            Cb_uncompressed.push(block);
+            // Remove used prev_block
+            Cb_uncompressed.pop();
+        }
+        for(u16 blocks_read = 0; blocks_read < num_C_blocks; blocks_read++){
+            Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::chrominance));
+            Block8x8& prev_block = Cr_uncompressed.front();
+            Block8x8 block = dct::add_delta_block(prev_block, delta_block);
+            // Push to active frame
+            Cr_blocks.push_back(block);
+            // Save for later
+            Cr_uncompressed.push(block);
+            // Remove used prev_block
+            Cr_uncompressed.pop();
         }
     }
 }
