@@ -12,6 +12,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -std=c++20")
 
 set(SOURCES 
     ${CMAKE_CURRENT_SOURCE_DIR}/app/discrete_cosine_transform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/stream.cpp
 )
 
 add_executable(uvid_compress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_compress.cpp ${SOURCES})
