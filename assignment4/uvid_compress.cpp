@@ -81,12 +81,14 @@ int main(int argc, char** argv){
         dct::partition_channel(Cr_blocks, height/2, width/2, Cr_matrix);
 
         if(num_frames == 0){
-            helper::process_I_frame(Y_blocks, Cb_blocks, Cr_blocks, Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, output_stream);
+            helper::compress_I_frame(Y_blocks, Cb_blocks, Cr_blocks, 
+                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, output_stream);
         }else{
-
+            helper::compress_P_frame(Y_blocks, Cb_blocks, Cr_blocks, 
+                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, output_stream);
         }
         // Send I-frame every 120 frames
-        // num_frames = (num_frames > 120) ? 0 : num_frames+1;
+        num_frames = (num_frames > 120) ? 0 : num_frames+1;
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data

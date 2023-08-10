@@ -41,6 +41,18 @@ int main(int argc, char** argv){
     u16 height, width;
     stream::read_header(input_stream, quality, height, width);
 
+    // calculate number of Y_matrix blocks expected
+    u16 Y_blocks_wide = (width%8 == 0) ? width/8 : (width/8)+1;
+    u16 Y_blocks_high = (height%8 == 0) ? height/8 : (height/8)+1;
+    u16 num_Y_blocks = Y_blocks_wide * Y_blocks_high;
+
+    // calculate number of Cb and Cr blocks expected
+    u16 scaled_height = height/2;
+    u16 scaled_width = width/2; 
+    u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+    u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
+    u16 num_C_blocks = C_blocks_wide * C_blocks_high;
+
     YUVStreamWriter writer {std::cout, width, height};
 
     // To store uncompressed blocks 
@@ -48,11 +60,13 @@ int main(int argc, char** argv){
 
     u8 flag = input_stream.read_byte();
     while (flag){
-        YUVFrame420& frame = writer.frame();
         // read blocks for each color channel in row major order
         std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
         if(flag == 1){
-            helper::decompress_I_frame(width, height, Y_blocks, Cb_blocks, Cr_blocks, 
+            helper::decompress_I_frame(num_Y_blocks, num_C_blocks, Y_blocks, Cb_blocks, Cr_blocks, 
+                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, input_stream);
+        }else{
+            helper::decompress_P_frame(num_Y_blocks, num_C_blocks, Y_blocks, Cb_blocks, Cr_blocks, 
                 Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, input_stream);
         }
 
@@ -64,7 +78,8 @@ int main(int argc, char** argv){
         dct::undo_partition_channel(Cb_blocks, height/2 ,width/2, Cb_matrix);
         dct::undo_partition_channel(Cr_blocks, height/2 ,width/2, Cr_matrix);
 
-        // Create and fill frame
+        // Create and write into frame
+        YUVFrame420& frame = writer.frame();
         writer.write_frame();
         for (u32 y = 0; y < height; y++)
             for (u32 x = 0; x < width; x++)
