@@ -60,14 +60,6 @@ int main(int argc, char** argv){
         // Get the active frame
         YUVFrame420& active_frame = reader.frame();
 
-        if (num_frames == 0)
-            // Send I-frame
-            output_stream.push_byte(1);
-        else
-            // Send P-frame
-            output_stream.push_byte(2);
-        num_frames++:
-
         // Separate Y Cb and Cr channels
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height, width);
         auto Cb_matrix = helper::create_2d_vector<unsigned char>(height/2, width/2);
@@ -88,24 +80,13 @@ int main(int argc, char** argv){
         dct::partition_channel(Cb_blocks, height/2, width/2, Cb_matrix);
         dct::partition_channel(Cr_blocks, height/2, width/2, Cr_matrix);
 
-        for(Block8x8& curr_block : Y_blocks){
-            // Take the DCT and quantize
-            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::luminance);
-            // Push in array format
-            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
-            // Unquantize and take the inverse DCT
-            Y_uncompressed.push(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::luminance)););
+        if(num_frames == 0){
+            helper::process_I_frame(Y_blocks, Cb_blocks, Cr_blocks, Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, output_stream);
+        }else{
+
         }
-        for(Block8x8& curr_block : Cb_blocks){
-            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
-            Cb_uncompressed.push(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance)));
-        }
-        for(Block8x8& curr_block : Cr_blocks){
-            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(curr_block), quality, dct::chrominance);
-            stream::push_quantized_array_delta(output_stream, dct::block_to_array(quantized_block));
-            Cr_uncompressed.push(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance)));
-        }
+        // Send I-frame every 120 frames
+        // num_frames = (num_frames > 120) ? 0 : num_frames+1;
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data
