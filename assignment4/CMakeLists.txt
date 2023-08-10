@@ -10,5 +10,9 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/app")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -std=c++20")
 
-add_executable(uvid_compress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_compress.cpp)
-add_executable(uvid_decompress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_decompress.cpp)
+set(SOURCES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/discrete_cosine_transform.cpp
+)
+
+add_executable(uvid_compress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_compress.cpp ${SOURCES})
+add_executable(uvid_decompress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_decompress.cpp ${SOURCES})
