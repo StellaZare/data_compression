@@ -76,9 +76,9 @@ int main(int argc, char** argv){
         
         // Partition color channels into 8x8 blocks
         std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
-        dct::partition_channel(Y_blocks, height, width, Y_matrix);
-        dct::partition_channel(Cb_blocks, height/2, width/2, Cb_matrix);
-        dct::partition_channel(Cr_blocks, height/2, width/2, Cr_matrix);
+        dct::partition_Y_channel(Y_blocks, height, width, Y_matrix);
+        dct::partition_C_channel(Cb_blocks, height/2, width/2, Cb_matrix);
+        dct::partition_C_channel(Cr_blocks, height/2, width/2, Cr_matrix);
 
         if(num_frames == 0){
             helper::compress_I_frame(Y_blocks, Cb_blocks, Cr_blocks, 

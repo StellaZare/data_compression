@@ -73,10 +73,9 @@ int main(int argc, char** argv){
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height,width);
         auto Cb_matrix = helper::create_2d_vector<unsigned char>(height/2 ,width/2);
         auto Cr_matrix = helper::create_2d_vector<unsigned char>(height/2 ,width/2);
-
-        dct::undo_partition_channel(Y_blocks, height, width, Y_matrix);
-        dct::undo_partition_channel(Cb_blocks, height/2 ,width/2, Cb_matrix);
-        dct::undo_partition_channel(Cr_blocks, height/2 ,width/2, Cr_matrix);
+        dct::undo_partition_Y_channel(Y_blocks, height, width, Y_matrix);
+        dct::undo_partition_C_channel(Cb_blocks, height/2 ,width/2, Cb_matrix);
+        dct::undo_partition_C_channel(Cr_blocks, height/2 ,width/2, Cr_matrix);
 
         // Create and write into frame
         YUVFrame420& frame = writer.frame();

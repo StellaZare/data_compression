@@ -99,7 +99,7 @@ namespace dct{
     /* ----- Compressor Functions ----- */
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
-    void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel){
+    void partition_C_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel){
         for(u32 r = 0; r < height; r+=8){
             for(u32 c = 0; c < width; c+=8){
                 Block8x8 current_block;
@@ -119,6 +119,40 @@ namespace dct{
                     }
                 }
                 blocks.push_back(current_block);
+            }
+        }
+    }
+
+    // given a Y channel partitions into 8x8 blocks and adds blocks to vector in macroblock row major order
+    void partition_Y_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel){
+        // break up into 16x 16 blocks
+        for(u32 r = 0; r < height; r+=16){
+            for(u32 c = 0; c < width; c+=16){
+                // break up each 16x16 into 8x8
+                for(u32 sub_r = 0; sub_r < 16; sub_r+=8){
+                    for(u32 sub_c = 0; sub_c < 16; sub_c+=8){
+                        // create the block
+                        Block8x8 current_block;
+                        // index into 8x8 sub block
+                        for(u32 block_r = 0; block_r < 8; block_r++){
+                            for(u32 block_c = 0; block_c < 8; block_c++){
+                                u32 r_offset = r+sub_r;
+                                u32 c_offset = c+sub_c;
+                                // copy element 
+                                if((r_offset+block_r) >= height && (c_offset+block_c) < width)
+                                    current_block.at(block_r).at(block_c) = double(channel.at(height-1).at(c_offset+block_c));
+                                else if((c_offset+block_c) >= width && (r_offset+block_r) < height)
+                                    current_block.at(block_r).at(block_c) = double(channel.at(r_offset+block_r).at(width-1));
+                                else if((r_offset+block_r) >= height && (c_offset+block_c) >= width)
+                                    current_block.at(block_r).at(block_c) = double(channel.at(height-1).at(width-1));
+                                else
+                                    current_block.at(block_r).at(block_c) = double(channel.at(r_offset+block_r).at(c_offset+block_c));
+                            }
+                        } 
+                        blocks.push_back(current_block);
+                    }
+                }
+                
             }
         }
     }
@@ -240,7 +274,7 @@ namespace dct{
     }
 
     // given a vector of blocks in row major order color reconstructs the channel matrix
-    void undo_partition_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel){
+    void undo_partition_C_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel){
         u32 idx = 0;
         for(u32 r = 0; r < height; r+=8){
             for(u32 c = 0; c < width; c+=8){
@@ -251,6 +285,31 @@ namespace dct{
                         // copy element 
                         if( (r+sub_r) < height && (c+sub_c) < width ){
                             channel.at(r+sub_r).at(c+sub_c) = round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // given a vector of blocks in row major order color reconstructs the channel matrix
+    void undo_partition_Y_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel){
+        u32 idx = 0;
+        for(u32 r = 0; r < height; r+=16){
+            for(u32 c = 0; c < width; c+=16){
+                for(u32 sub_r = 0; sub_r < 16; sub_r+=8){
+                    for(u32 sub_c = 0; sub_c < 16; sub_c+=8){
+                        const Block8x8& current_block = blocks.at(idx++);
+                        u32 r_offset = r + sub_r;
+                        u32 c_offset = c + sub_c;
+                        // index into 8x8 sub block
+                        for(u32 sub_r = 0; sub_r < 8; sub_r++){
+                            for(u32 sub_c = 0; sub_c < 8; sub_c++){
+                                // copy element 
+                                if( (r_offset+sub_r) < height && (c_offset+sub_c) < width ){
+                                    channel.at(r_offset+sub_r).at(c_offset+sub_c) = round_and_clamp_to_char(current_block.at(sub_r).at(sub_c));
+                                }
+                            }
                         }
                     }
                 }

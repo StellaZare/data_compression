@@ -6,6 +6,7 @@
 #include <array>
 
 using Block8x8 = std::array<std::array<double, 8>, 8>;
+using Block16x16 = std::array<std::array<double, 16>, 16>;
 using Array64 = std::array<int, 64>;
 using u32 = std::uint32_t;
 using u16 = std::uint16_t;
@@ -109,7 +110,8 @@ namespace dct {
     Block8x8 add_delta_block(const Block8x8& block, const Block8x8& delta);
 
     /* ----- Compressor Functions ----- */
-    void partition_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
+    void partition_Y_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
+    void partition_C_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
     Block8x8 get_dct(const Block8x8 &block);
     Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
     Direction get_direction(u32 r, u32 c, Direction curr);
@@ -119,7 +121,8 @@ namespace dct {
     Block8x8 array_to_block(const Array64& array);
     Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
     Block8x8 get_inverse_dct(const Block8x8& block);
-    void undo_partition_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);
+    void undo_partition_C_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);
+    void undo_partition_Y_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);
 
 } // namespace dct
 
