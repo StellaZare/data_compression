@@ -47,24 +47,31 @@ int main(int argc, char** argv){
         return 1;
     }
 
+    // calculate number of macro blocks expected
+    u16 scaled_height = height/2;
+    u16 scaled_width = width/2; 
+    u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+    u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
+    u16 num_macro_blocks = C_blocks_wide * C_blocks_high;
+
     YUVStreamReader reader {std::cin, width, height};
     OutputBitStream output_stream {std::cout};
 
     stream::push_header(output_stream, quality, height, width);
 
-    // To store uncompressed blocks 
-    std::queue<Block8x8> Y_uncompressed, Cb_uncompressed, Cr_uncompressed;
-    u32 num_frames = 0; 
+    // To manage previous frame 
+    YUVFrame420 previous_frame {width, height};
+    bool is_first_frame {true};
 
     while (reader.read_next_frame()){
         // Get the active frame
         YUVFrame420& active_frame = reader.frame();
+        output_stream.push_byte(1);
 
         // Separate Y Cb and Cr channels
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height, width);
         auto Cb_matrix = helper::create_2d_vector<unsigned char>(height/2, width/2);
         auto Cr_matrix = helper::create_2d_vector<unsigned char>(height/2, width/2);
-
         for (u32 y = 0; y < height; y++)
             for (u32 x = 0; x < width; x++)
                 Y_matrix.at(y).at(x) = active_frame.Y(x,y);
@@ -80,15 +87,29 @@ int main(int argc, char** argv){
         dct::partition_C_channel(Cb_blocks, height/2, width/2, Cb_matrix);
         dct::partition_C_channel(Cr_blocks, height/2, width/2, Cr_matrix);
 
-        if(num_frames == 0){
-            helper::compress_I_frame(Y_blocks, Cb_blocks, Cr_blocks, 
-                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, output_stream);
-        }else{
-            helper::compress_P_frame(Y_blocks, Cb_blocks, Cr_blocks, 
-                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, output_stream);
+        // To manage previous frame
+        std::list<Block8x8> uncompressed_blocks;
+
+        // To manage active frame
+        std::list<bool> flags;
+        std::list<Block8x8> compressed_blocks;
+        std::list<std::pair<int, int>> motion_vectors;
+
+        for(u32 C_idx = 0; C_idx < num_macro_blocks; C_idx++){
+            // create 16x16 Y-block
+            u32 Y_idx = 4 * C_idx;
+            Block16x16 macroblock = dct::create_macroblock(Y_blocks.at(Y_idx), Y_blocks.at(Y_idx+1), Y_blocks.at(Y_idx+2), Y_blocks.at(Y_idx+3));
+
+            // Look for motion vector (assume non found)
+
+            flags.push_back(0);
+            helper::compress_I_block(compressed_blocks, uncompressed_blocks, C_idx, Y_blocks, Cb_blocks, Cr_blocks, quality);
         }
-        // Send I-frame every 120 frames
-        num_frames = (num_frames > 120) ? 0 : num_frames+1;
+        // send compressed blocks
+        helper::push_compressed_blocks(flags, compressed_blocks, output_stream);
+        // reconstruct prev frame
+        previous_frame = helper::reconstruct_prev_frame(uncompressed_blocks, num_macro_blocks, height, width);
+        is_first_frame = false;
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data

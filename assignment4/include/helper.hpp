@@ -1,6 +1,7 @@
 #include <queue>
 #include <vector>
 #include <string>
+#include <list>
 #include "discrete_cosine_transform.hpp"
 #include "yuv_stream.hpp"
 #include "output_stream.hpp"
@@ -32,6 +33,7 @@ namespace helper{
             return dct::Quality::ERROR;
     }
 
+    /*----- Deprocated ------*/
     // // Pushes each quantized to the output stream
     // Block8x8 simulate_decompressor(const Block8x8& quantized_block, dct::Quality quality, const Block8x8& q_matrix){
     //     return dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, q_matrix));
@@ -138,7 +140,6 @@ namespace helper{
         }
     }
 
-    /* -----Decompressor code ----- */
     void decompress_I_frame(u16 num_Y_blocks, u16 num_C_blocks, std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks,
     std::queue<Block8x8>& Y_uncompressed, std::queue<Block8x8>& Cb_uncompressed, std::queue<Block8x8>& Cr_uncompressed, dct::Quality quality, InputBitStream& input_stream){
 
@@ -218,5 +219,88 @@ namespace helper{
             // Remove used prev_block
             Cr_uncompressed.pop();
         }
+
+    }
+    /* ----- Compressor Code ----- */
+
+    void compress_I_block(std::list<Block8x8>& compressed_blocks, std::list<Block8x8>& uncompressed_blocks, u32 C_idx, 
+    const std::vector<Block8x8>& Y_blocks, const std::vector<Block8x8>& Cb_blocks, const std::vector<Block8x8>& Cr_blocks, dct::Quality quality){
+        u32 Y_idx = 4 * C_idx;
+        for(u32 count = 0; count < 4; count++){
+            // Take the DCT and quantize
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(Y_blocks.at(Y_idx+count)), quality, dct::luminance);
+            // Push in array format
+            compressed_blocks.push_back(quantized_block);
+            // Unquantize and take the inverse DCT
+            uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::luminance)));
+        }
+
+        Block8x8 quantized_Cb_block = dct::quantize_block(dct::get_dct(Cb_blocks.at(C_idx)), quality, dct::chrominance);
+        compressed_blocks.push_back(quantized_Cb_block);
+        uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cb_block, quality, dct::chrominance)));
+
+        Block8x8 quantized_Cr_block = dct::quantize_block(dct::get_dct(Cr_blocks.at(C_idx)), quality, dct::chrominance);
+        compressed_blocks.push_back(quantized_Cr_block);
+        uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cr_block, quality, dct::chrominance)));
+    }
+
+    void push_compressed_blocks(const std::list<bool>& flags, std::list<Block8x8>& compressed_blocks, OutputBitStream& output_stream){
+        for(bool block_type : flags){
+            // Push block-type bit (0=I-block and 1=P-block)
+            output_stream.push_bit(block_type);
+            // Push the macro block (in Y Cb Cr order)
+            for(u32 count = 0; count < 6; count++){
+                stream::push_quantized_array_delta(output_stream, dct::block_to_array(compressed_blocks.front()));
+                compressed_blocks.pop_front();
+            }
+        }
+    }
+
+    YUVFrame420 reconstruct_prev_frame(std::list<Block8x8>& compressed_blocks, u32 num_macro_blocks, u32 height, u32 width){  
+        std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
+        for(u32 macro_count = 0; macro_count < num_macro_blocks; macro_count++){
+            for(u32 y_count = 0; y_count < 4; y_count++){
+                Y_blocks.push_back(compressed_blocks.front());
+                compressed_blocks.pop_front();
+            }
+            Cb_blocks.push_back(compressed_blocks.front());
+            compressed_blocks.pop_front();
+
+            Cr_blocks.push_back(compressed_blocks.front());
+            compressed_blocks.pop_front();
+        }
+
+        auto Y_matrix = helper::create_2d_vector<unsigned char>(height,width);
+        auto Cb_matrix = helper::create_2d_vector<unsigned char>(height/2 ,width/2);
+        auto Cr_matrix = helper::create_2d_vector<unsigned char>(height/2 ,width/2);
+        dct::undo_partition_Y_channel(Y_blocks, height, width, Y_matrix);
+        dct::undo_partition_C_channel(Cb_blocks, height/2 ,width/2, Cb_matrix);
+        dct::undo_partition_C_channel(Cr_blocks, height/2 ,width/2, Cr_matrix);
+
+        YUVFrame420 previous_frame {width, height};
+        for (u32 y = 0; y < height; y++)
+            for (u32 x = 0; x < width; x++)
+                previous_frame.Y(x,y) = Y_matrix.at(y).at(x);
+        for (u32 y = 0; y < height/2; y++)
+            for (u32 x = 0; x < width/2; x++){
+                previous_frame.Cb(x,y) = Cb_matrix.at(y).at(x);
+                previous_frame.Cr(x,y) = Cr_matrix.at(y).at(x);
+            }
+        return previous_frame;
+
+    }
+
+    /*----- Decompressor Code -----*/
+    void decompress_I_block(std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks, dct::Quality quality, InputBitStream& input_stream){
+        for(u32 count = 0; count < 4; count++){
+            Block8x8 Y_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            // Unquantize and take the inverse dct
+            Y_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Y_block, quality, dct::luminance)));
+        }
+        Block8x8 Cb_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+        Cb_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cb_block, quality, dct::chrominance)));
+
+        Block8x8 Cr_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+        Cr_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cr_block, quality, dct::chrominance)));
     }
 }
