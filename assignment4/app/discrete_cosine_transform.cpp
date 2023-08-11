@@ -96,6 +96,31 @@ namespace dct{
         return result;
     }
 
+    Block16x16 create_macroblock(const Block8x8& b1, const Block8x8& b2, const Block8x8& b3, const Block8x8& b4){
+        Block16x16 macroblock;
+        for(u32 b1_r = 0; b1_r < 8; b1_r++){
+            for(u32 b1_c = 0; b1_c < 8; b1_c++){
+                macroblock.at(b1_r).at(b1_c) = b1.at(b1_r).at(b1_c);
+            }
+        }
+        for(u32 b2_r = 0; b2_r < 8; b2_r++){
+            for(u32 b2_c = 0; b2_c < 8; b2_c++){
+                macroblock.at(b2_r).at(b2_c+8) = b2.at(b2_r).at(b2_c);
+            }
+        }
+        for(u32 b3_r = 0; b3_r < 8; b3_r++){
+            for(u32 b3_c = 0; b3_c < 8; b3_c++){
+                macroblock.at(b3_r+8).at(b3_c) = b3.at(b3_r).at(b3_c);
+            }
+        }
+        for(u32 b4_r = 0; b4_r < 8; b4_r++){
+            for(u32 b4_c = 0; b4_c < 8; b4_c++){
+                macroblock.at(b4_r+8).at(b4_c+8) = b4.at(b4_r).at(b4_c);
+            }
+        }
+        return macroblock;
+    }
+
     /* ----- Compressor Functions ----- */
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order

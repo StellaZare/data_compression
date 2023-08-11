@@ -108,6 +108,7 @@ namespace dct {
     Block8x8 transpose_block(const Block8x8& block);
     Block8x8 get_delta_block(const Block8x8& block1, const Block8x8& block2);
     Block8x8 add_delta_block(const Block8x8& block, const Block8x8& delta);
+    Block16x16 create_macroblock(const Block8x8& b1, const Block8x8& b2, const Block8x8& b3, const Block8x8& b4);
 
     /* ----- Compressor Functions ----- */
     void partition_Y_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
