@@ -226,30 +226,31 @@ namespace helper{
     /* ----- Compressor Code ----- */
 
     bool find_motion_vector(const Block16x16& block, YUVFrame420& prev_frame, u32 macro_idx, std::pair<int,int>& vector, int radius = 8){
-        u32 scaled_width = prev_frame.get_Width() / 2;
-        u32 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+        int scaled_width = prev_frame.get_Width() / 2;
+        int C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
         // (0,0) coordinate of block in the frame
         int B_x = macro_idx / C_blocks_wide;
         int B_y = macro_idx % C_blocks_wide;
         // Search region boundaries (radius of 8)
-        u32 v_x_min = (B_x-radius < 0)? 0 : B_x-radius;
-        u32 v_x_max = (B_x+radius < prev_frame.get_Width()) ? B_x+radius : prev_frame.get_Width();
-        u32 v_y_min = (B_y-radius < 0)? 0 : B_y-radius;
-        u32 v_y_max = (B_y+radius < prev_frame.get_Height()) ? B_y+radius : prev_frame.get_Height();
+        int v_x_min = (B_x-radius < 0)? 0 : B_x-radius;
+        int v_x_max = (B_x+radius < prev_frame.get_Width()) ? B_x+radius : prev_frame.get_Width();
+        int v_y_min = (B_y-radius < 0)? 0 : B_y-radius;
+        int v_y_max = (B_y+radius < prev_frame.get_Height()) ? B_y+radius : prev_frame.get_Height();
 
         // Look for motion vectors
-        for(u32 v_x = v_x_min; v_x < v_x_max; v_x++){
-            for(u32 v_y = v_y_min; v_y < v_y_max; v_y++){
+        for(int v_x = v_x_min; v_x < v_x_max; v_x++){
+            for(int v_y = v_y_min; v_y < v_y_max; v_y++){
                 // calculate the AAD(v)
-                int avg_difference {};
+                double avg_difference {};
 
-                for(u32 i = 0; i < 16; i++){
-                    for(u32 j = 0; j < 16; j++){
-                        int value = block.at(i).at(j) - prev_frame.Y(i+v_x, j+v_y);
+                for(u32 r = 0; r < 16 && r+v_y < prev_frame.get_Height(); r++){
+                    for(u32 c = 0; c < 16 && c+v_x < prev_frame.get_Width(); c++){
+                        int value = int(block.at(r).at(c)) - int(prev_frame.Y(r+v_y, c+v_x));
                         avg_difference += std::abs(value);
                     }
                 }
-                if(avg_difference <= 2){
+                // std::cerr << "avg_difference was " << avg_difference/256 << std::endl;
+                if((avg_difference/256) <= 3){
                     // Good vector found
                     vector.first = v_x - B_x;
                     vector.second= v_y - B_y;
@@ -287,7 +288,7 @@ namespace helper{
 
         std::vector<Block8x8> prev_blocks;
         dct::get_prev_blocks(macro_idx, prev_frame, vector, prev_blocks);
-
+        // std::cerr<< "prev_blocks " << prev_blocks.size() << std::endl;
         u32 Y_idx = 4 * macro_idx;
         for(u32 count = 0; count < 4; count++){
             //Get the delta values 

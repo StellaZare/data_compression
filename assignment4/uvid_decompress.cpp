@@ -55,17 +55,23 @@ int main(int argc, char** argv){
     YUVFrame420 previous_frame {width, height};
 
     while (input_stream.read_byte()){
+
+        // Read the motion vectors
+        std::list<std::pair<int, int>> motion_vectors;
+        helper::read_motion_vectors(motion_vectors, input_stream);
+        
         // read blocks for each color channel in row major order
         std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
 
-        for(u32 count = 0; count < num_macro_blocks; count++){
+        for(u32 macro_idx = 0; macro_idx < num_macro_blocks; macro_idx++){
             bool block_type = input_stream.read_bit();
             if(block_type == 0){
                 // I-block
                 helper::decompress_I_block(Y_blocks, Cb_blocks, Cr_blocks, quality, input_stream);
             }else{
                 //P-block
-
+                helper::decompress_P_block(Y_blocks, Cb_blocks, Cr_blocks, quality, input_stream, macro_idx, motion_vectors.front(), previous_frame);
+                motion_vectors.pop_front();
             }
         }
 

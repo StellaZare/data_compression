@@ -135,33 +135,35 @@ namespace dct{
        
         Block8x8 block;
         // Push back Y blocks
-        for(u32 r = P_x; r < P_x+8; P_x++)
-            for(u32 c = P_y; c < P_y+8; c++)
-                block.at(r).at(c) = prev_frame.Y(r,c);
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+r,P_y+c);
         prev_blocks.push_back(block);
-        for(u32 r = P_x; r < P_x+8; P_x++)
-            for(u32 c = P_y+8; c < P_y+16; c++)
-                block.at(r).at(c) = prev_frame.Y(r,c+8);
+        
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+r,P_y+8+c);
         prev_blocks.push_back(block);
-        for(u32 r = P_x+8; r < P_x+16; P_x++)
-            for(u32 c = P_y; c < P_y+8; c++)
-                block.at(r).at(c) = prev_frame.Y(r+8,c);
+
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+8+r,P_y+c);
         prev_blocks.push_back(block);
-        for(u32 r = P_x+8; r < P_x+16; P_x++)
-            for(u32 c = P_y+8; c < P_y+16; c++)
-                block.at(r).at(c) = prev_frame.Y(r+8,c+8);
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+8+r,P_y+8+c);
         prev_blocks.push_back(block);
 
         //Push back Cb block
-        for(u32 r = P_x; r < P_x+8; P_x++)
-            for(u32 c = P_y; c < P_y+8; c++)
-                block.at(r).at(c) = prev_frame.Cb(r,c);
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Cb(P_x+r,P_y+c);
         prev_blocks.push_back(block);
 
         // Push back Cr block
-        for(u32 r = P_x; r < P_x+8; P_x++)
-            for(u32 c = P_y; c < P_y+8; c++)
-                block.at(r).at(c) = prev_frame.Cr(r,c);
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Cr(P_x+r,P_y+c);
         prev_blocks.push_back(block);
     }
 

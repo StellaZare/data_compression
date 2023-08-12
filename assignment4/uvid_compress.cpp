@@ -95,16 +95,27 @@ int main(int argc, char** argv){
         std::list<Block8x8> compressed_blocks;
         std::list<std::pair<int, int>> motion_vectors;
 
-        for(u32 C_idx = 0; C_idx < num_macro_blocks; C_idx++){
+        for(u32 macro_idx = 0; macro_idx < num_macro_blocks; macro_idx++){
             // create 16x16 Y-block
-            u32 Y_idx = 4 * C_idx;
+            u32 Y_idx = 4 * macro_idx;
             Block16x16 macroblock = dct::create_macroblock(Y_blocks.at(Y_idx), Y_blocks.at(Y_idx+1), Y_blocks.at(Y_idx+2), Y_blocks.at(Y_idx+3));
 
             // Look for motion vector (assume non found)
+            std::pair<int, int> vector {0, 0};
+            // if (!is_first_frame && helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector)){
+            if (!is_first_frame){
+                flags.push_back(1);
+                motion_vectors.push_back(vector);
+                helper::compress_P_block(compressed_blocks, uncompressed_blocks, macro_idx, Y_blocks, Cb_blocks, Cr_blocks, quality, previous_frame, vector);
 
-            flags.push_back(0);
-            helper::compress_I_block(compressed_blocks, uncompressed_blocks, C_idx, Y_blocks, Cb_blocks, Cr_blocks, quality);
+            }else{
+                flags.push_back(0);
+                helper::compress_I_block(compressed_blocks, uncompressed_blocks, macro_idx, Y_blocks, Cb_blocks, Cr_blocks, quality);
+            }
         }
+        // Begin to push the frame
+        std::cerr << "motion vectors used " << motion_vectors.size() << std::endl;
+        helper::push_motion_vectors(motion_vectors, output_stream);
         // send compressed blocks
         helper::push_compressed_blocks(flags, compressed_blocks, output_stream);
         // reconstruct prev frame
