@@ -1,4 +1,5 @@
 #include "discrete_cosine_transform.hpp"
+
 #include <iostream>
 
 namespace dct{
@@ -119,6 +120,49 @@ namespace dct{
             }
         }
         return macroblock;
+    }
+
+    void get_prev_blocks(u32 macro_idx, YUVFrame420& prev_frame, const std::pair<u32, u32>& vector, std::vector<Block8x8>& prev_blocks){
+        
+        u32 scaled_width = prev_frame.get_Width() / 2;
+        u32 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+        // (0,0) coordinate of active block in the frame
+        u32 B_x = macro_idx / C_blocks_wide;
+        u32 B_y = macro_idx % C_blocks_wide;
+        // (0,0) coordinate of compare block
+        u32 P_x = B_x + vector.first;
+        u32 P_y = B_y + vector.second;
+       
+        Block8x8 block;
+        // Push back Y blocks
+        for(u32 r = P_x; r < P_x+8; P_x++)
+            for(u32 c = P_y; c < P_y+8; c++)
+                block.at(r).at(c) = prev_frame.Y(r,c);
+        prev_blocks.push_back(block);
+        for(u32 r = P_x; r < P_x+8; P_x++)
+            for(u32 c = P_y+8; c < P_y+16; c++)
+                block.at(r).at(c) = prev_frame.Y(r,c+8);
+        prev_blocks.push_back(block);
+        for(u32 r = P_x+8; r < P_x+16; P_x++)
+            for(u32 c = P_y; c < P_y+8; c++)
+                block.at(r).at(c) = prev_frame.Y(r+8,c);
+        prev_blocks.push_back(block);
+        for(u32 r = P_x+8; r < P_x+16; P_x++)
+            for(u32 c = P_y+8; c < P_y+16; c++)
+                block.at(r).at(c) = prev_frame.Y(r+8,c+8);
+        prev_blocks.push_back(block);
+
+        //Push back Cb block
+        for(u32 r = P_x; r < P_x+8; P_x++)
+            for(u32 c = P_y; c < P_y+8; c++)
+                block.at(r).at(c) = prev_frame.Cb(r,c);
+        prev_blocks.push_back(block);
+
+        // Push back Cr block
+        for(u32 r = P_x; r < P_x+8; P_x++)
+            for(u32 c = P_y; c < P_y+8; c++)
+                block.at(r).at(c) = prev_frame.Cr(r,c);
+        prev_blocks.push_back(block);
     }
 
     /* ----- Compressor Functions ----- */
