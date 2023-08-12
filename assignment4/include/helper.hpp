@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <algorithm>
+#include <cstdlib>
 #include "discrete_cosine_transform.hpp"
 #include "yuv_stream.hpp"
 #include "output_stream.hpp"
@@ -223,6 +225,41 @@ namespace helper{
     }
     /* ----- Compressor Code ----- */
 
+    bool find_motion_vector(const Block16x16& block, YUVFrame420& prev_frame, u32 macro_idx, std::pair<int,int>& vector, int radius = 8){
+        u32 scaled_width = prev_frame.get_Width() / 2;
+        u32 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+        // (0,0) coordinate of block in the frame
+        int B_x = macro_idx / C_blocks_wide;
+        int B_y = macro_idx % C_blocks_wide;
+        // Search region boundaries (radius of 8)
+        u32 v_x_min = (B_x-radius < 0)? 0 : B_x-radius;
+        u32 v_x_max = (B_x+radius < prev_frame.get_Width()) ? B_x+radius : prev_frame.get_Width();
+        u32 v_y_min = (B_y-radius < 0)? 0 : B_y-radius;
+        u32 v_y_max = (B_y+radius < prev_frame.get_Height()) ? B_y+radius : prev_frame.get_Height();
+
+        // Look for motion vectors
+        for(u32 v_x = v_x_min; v_x < v_x_max; v_x++){
+            for(u32 v_y = v_y_min; v_y < v_y_max; v_y++){
+                // calculate the AAD(v)
+                int avg_difference {};
+
+                for(u32 i = 0; i < 16; i++){
+                    for(u32 j = 0; j < 16; j++){
+                        int value = block.at(i).at(j) - prev_frame.Y(i+v_x, j+v_y);
+                        avg_difference += std::abs(value);
+                    }
+                }
+                if(avg_difference <= 2){
+                    // Good vector found
+                    vector.first = v_x - B_x;
+                    vector.second= v_y - B_y;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     void compress_I_block(std::list<Block8x8>& compressed_blocks, std::list<Block8x8>& uncompressed_blocks, u32 C_idx, 
     const std::vector<Block8x8>& Y_blocks, const std::vector<Block8x8>& Cb_blocks, const std::vector<Block8x8>& Cr_blocks, dct::Quality quality){
         u32 Y_idx = 4 * C_idx;
@@ -242,6 +279,65 @@ namespace helper{
         Block8x8 quantized_Cr_block = dct::quantize_block(dct::get_dct(Cr_blocks.at(C_idx)), quality, dct::chrominance);
         compressed_blocks.push_back(quantized_Cr_block);
         uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cr_block, quality, dct::chrominance)));
+    }
+
+    void compress_P_block(std::list<Block8x8>& compressed_blocks, std::list<Block8x8>& uncompressed_blocks, u32 macro_idx, 
+    const std::vector<Block8x8>& Y_blocks, const std::vector<Block8x8>& Cb_blocks, const std::vector<Block8x8>& Cr_blocks, dct::Quality quality,
+    YUVFrame420& prev_frame, const std::pair<int, int>& vector){
+
+        std::vector<Block8x8> prev_blocks;
+        dct::get_prev_blocks(macro_idx, prev_frame, vector, prev_blocks);
+
+        u32 Y_idx = 4 * macro_idx;
+        for(u32 count = 0; count < 4; count++){
+            //Get the delta values 
+            Block8x8 delta_block = dct::get_delta_block(Y_blocks.at(Y_idx+count), prev_blocks.at(count));
+            // Take the DCT and quantize the delta values
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, dct::luminance);
+            // Push in array format
+            compressed_blocks.push_back(quantized_block);
+            // Unquantize and take the inverse DCT of the delta values 
+            Block8x8 uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::luminance));
+            // Unquantize and take the inverse DCT
+            uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(count), uncompressed_delta));
+        }
+
+        Block8x8 delta_block = dct::get_delta_block(Cb_blocks.at(macro_idx), prev_blocks.at(4));
+        Block8x8 quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, dct::chrominance);
+        compressed_blocks.push_back(quantized_block);
+        Block8x8 uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance));
+        uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(4), uncompressed_delta));
+
+        delta_block = dct::get_delta_block(Cr_blocks.at(macro_idx), prev_blocks.at(5));
+        quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, dct::chrominance);
+        compressed_blocks.push_back(quantized_block);
+        uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance));
+        uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(5), uncompressed_delta));
+    }
+
+    void push_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, OutputBitStream& output_stream){
+        // Push number of motion vectors
+        stream::push_value(output_stream, motion_vectors.size());
+
+        // No motion vectors to push so return 
+        if(motion_vectors.size() == 0)
+            return;
+
+        // Push the first motion vector as u16
+        std::pair<int, int>& first_vector = motion_vectors.front();
+        stream::push_value(output_stream, first_vector.first);
+        stream::push_value(output_stream, first_vector.second);
+        std::pair<int, int> prev_vector = first_vector;
+        motion_vectors.pop_front();
+
+        // Push the rest of the motion vectors as delta values 
+        while(!motion_vectors.empty()){
+            std::pair<int, int>& curr_vector = motion_vectors.front();
+            stream::push_delta_value(output_stream, curr_vector.first-prev_vector.first);
+            stream::push_delta_value(output_stream, curr_vector.second-prev_vector.second);
+            prev_vector = curr_vector;
+            motion_vectors.pop_front();
+        }
     }
 
     void push_compressed_blocks(const std::list<bool>& flags, std::list<Block8x8>& compressed_blocks, OutputBitStream& output_stream){
@@ -302,5 +398,52 @@ namespace helper{
 
         Block8x8 Cr_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
         Cr_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cr_block, quality, dct::chrominance)));
+    }
+
+    void decompress_P_block(std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks, dct::Quality quality, InputBitStream& input_stream, 
+    u32 macro_idx, std::pair<int, int>& motion_vector, YUVFrame420& prev_frame){
+
+        std::vector<Block8x8> prev_blocks;
+        dct::get_prev_blocks(macro_idx, prev_frame, motion_vector, prev_blocks);
+
+        for(u32 count = 0; count < 4; count++){
+            // Create a block of delta values
+            Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+            // Unquantize and take the inverse dct
+            delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::luminance));
+            // Add delta_values to previous block
+            Y_blocks.push_back(dct::add_delta_block(prev_blocks.at(count), delta_block));
+        }
+
+        Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+        delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::chrominance));
+        Cb_blocks.push_back(dct::add_delta_block(prev_blocks.at(4), delta_block));
+
+        delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
+        delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::chrominance));
+        Cr_blocks.push_back(dct::add_delta_block(prev_blocks.at(5), delta_block));
+    }
+
+    void read_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, InputBitStream& input_stream){
+        // push number of motion vectors
+        int num_vectors = stream::read_value(input_stream);
+        std::cerr << "num motion vectors " << num_vectors << std::endl;
+        std::pair<int, int> first_vector;
+        if (num_vectors > 0){
+            first_vector.first = stream::read_value(input_stream);
+            first_vector.second = stream::read_value(input_stream);
+            motion_vectors.push_back(first_vector);
+            num_vectors--;
+        }
+
+        std::pair<int, int> prev_vector = first_vector;
+        while(num_vectors > 0){
+            std::pair<int, int> curr_vector;
+            curr_vector.first = stream::read_delta_value(input_stream) + prev_vector.first;
+            curr_vector.second = stream::read_delta_value(input_stream) + prev_vector.second;
+            motion_vectors.push_back(curr_vector);
+            prev_vector = curr_vector;
+            num_vectors--;
+        }
     }
 }
