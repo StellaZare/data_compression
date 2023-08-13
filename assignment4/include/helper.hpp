@@ -73,9 +73,7 @@ namespace helper{
             }
         }
         // if a good enough vector is found return
-        if(min_avg_difference <= 1){
-            // std::cerr << "using avg_diff " << min_avg_difference << std::endl;
-            // std::cerr << "vector " << vector.first << " " << vector.second << std::endl;
+        if(min_avg_difference <= 25){
             return true;
         }
         return false;
