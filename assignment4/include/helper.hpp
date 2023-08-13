@@ -245,15 +245,15 @@ namespace helper{
 
                 for(u32 r = 0; r < 16 && r+v_y < prev_frame.get_Height(); r++){
                     for(u32 c = 0; c < 16 && c+v_x < prev_frame.get_Width(); c++){
-                        int value = int(block.at(r).at(c)) - int(prev_frame.Y(r+v_y, c+v_x));
+                        int value = int(block.at(r).at(c)) - int(prev_frame.Y(c+v_x, r+v_y));
                         avg_difference += std::abs(value);
                     }
                 }
-                // std::cerr << "avg_difference was " << avg_difference/256 << std::endl;
-                if((avg_difference/256) <= 3){
+                if((avg_difference/256) <= 1){
                     // Good vector found
                     vector.first = v_x - B_x;
                     vector.second= v_y - B_y;
+                    // std::cerr << "avg_difference was " << avg_difference/256 << std::endl;
                     return true;
                 }
             }
@@ -428,7 +428,7 @@ namespace helper{
     void read_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, InputBitStream& input_stream){
         // push number of motion vectors
         int num_vectors = stream::read_value(input_stream);
-        std::cerr << "num motion vectors " << num_vectors << std::endl;
+
         std::pair<int, int> first_vector;
         if (num_vectors > 0){
             first_vector.first = stream::read_value(input_stream);

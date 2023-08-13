@@ -102,8 +102,8 @@ int main(int argc, char** argv){
 
             // Look for motion vector (assume non found)
             std::pair<int, int> vector {0, 0};
-            // if (!is_first_frame && helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector)){
-            if (!is_first_frame){
+            if (!is_first_frame && helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector)){
+            // if (!is_first_frame){
                 flags.push_back(1);
                 motion_vectors.push_back(vector);
                 helper::compress_P_block(compressed_blocks, uncompressed_blocks, macro_idx, Y_blocks, Cb_blocks, Cr_blocks, quality, previous_frame, vector);
@@ -114,7 +114,6 @@ int main(int argc, char** argv){
             }
         }
         // Begin to push the frame
-        std::cerr << "motion vectors used " << motion_vectors.size() << std::endl;
         helper::push_motion_vectors(motion_vectors, output_stream);
         // send compressed blocks
         helper::push_compressed_blocks(flags, compressed_blocks, output_stream);

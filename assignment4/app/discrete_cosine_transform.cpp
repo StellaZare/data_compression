@@ -135,35 +135,40 @@ namespace dct{
        
         Block8x8 block;
         // Push back Y blocks
+        // Top-left Y 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+r,P_y+c);
+                block.at(r).at(c) = prev_frame.Y(P_x+c,P_y+r);
         prev_blocks.push_back(block);
         
+        // Top-right 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+r,P_y+8+c);
+                block.at(r).at(c) = prev_frame.Y(P_x+8+c,P_y+r);
         prev_blocks.push_back(block);
 
+        // Bottom-left 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+8+r,P_y+c);
+                block.at(r).at(c) = prev_frame.Y(P_x+c,P_y+8+r);
         prev_blocks.push_back(block);
+
+        // Bottom-right 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+8+r,P_y+8+c);
+                block.at(r).at(c) = prev_frame.Y(P_x+8+c,P_y+8+r);
         prev_blocks.push_back(block);
 
         //Push back Cb block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Cb(P_x+r,P_y+c);
+                block.at(r).at(c) = prev_frame.Cb(P_x+c,P_y+r);
         prev_blocks.push_back(block);
 
         // Push back Cr block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Cr(P_x+r,P_y+c);
+                block.at(r).at(c) = prev_frame.Cr(P_x+c,P_y+r);
         prev_blocks.push_back(block);
     }
 
