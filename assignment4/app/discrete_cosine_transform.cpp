@@ -162,13 +162,13 @@ namespace dct{
         //Push back Cb block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Cb(P_x+c,P_y+r);
+                block.at(r).at(c) = prev_frame.Cb((P_x+c)/2,(P_y+r)/2);
         prev_blocks.push_back(block);
 
         // Push back Cr block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Cr(P_x+c,P_y+r);
+                block.at(r).at(c) = prev_frame.Cr((P_x+c)/2,(P_y+r)/2);
         prev_blocks.push_back(block);
     }
 
