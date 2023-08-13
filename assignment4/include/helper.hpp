@@ -20,6 +20,21 @@ namespace helper{
         return V;
     }
 
+    /* ----- My Helpers ----- */
+
+    // Returns the quality enum corresponding to the input string
+    // If invalid returns Quality::ERROR
+    dct::Quality get_quality(std::string input_quality){
+        if(input_quality == "low")
+            return dct::Quality::low;
+        else if(input_quality == "medium")
+            return dct::Quality::medium;
+        else if(input_quality == "high")
+            return dct::Quality::high;
+        else
+            return dct::Quality::ERROR;
+    }
+
     /* ----- Compressor Code ----- */
 
     bool find_motion_vector(const Block16x16& block, YUVFrame420& prev_frame, u32 macro_idx, std::pair<int,int>& vector, int radius = 8){
