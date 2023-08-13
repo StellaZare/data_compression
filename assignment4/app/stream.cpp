@@ -75,6 +75,28 @@ namespace stream{
         return count;
     }
 
+    void push_motion_vector_RLE(OutputBitStream& stream, std::vector<int> mv){
+        // push first vector normally
+        push_value_n(stream, mv.at(0), 4);
+        push_value_n(stream, mv.at(1), 4);
+
+        u32 idx = 2;
+        while(idx < mv.size()){
+            if(mv.at(idx) != 0){
+                push_delta_value(stream, mv.at(idx++));
+            }else{
+                u32 count = idx +1;
+                while(count < mv.size() && mv.at(count) == 0 && count <= 16){
+                    count++;
+                }
+                // push initial 0 then count
+                stream.push_bit(0);
+                stream.push_bits(count, 4);
+                idx = idx + count + 1;
+            }
+        }
+    }
+
     Array64 quantized_to_delta(const Array64& quantized){
         Array64 delta_values;
         delta_values.at(0) = quantized.at(0);
@@ -196,6 +218,28 @@ namespace stream{
 
         Array64 quantized = delta_to_quantized(delta_values);
         return quantized;
+    }
+
+    std::vector<int> read_motion_vector_RLE(InputBitStream& stream, int num_vectors){
+        std::vector<int> mv;
+
+        // push first vector normally
+        mv.push_back(read_value_n(stream, 4));
+        mv.push_back(read_value_n(stream, 4));
+
+        u32 idx = 2;
+        while(idx < num_vectors){
+            int value = read_delta_value(stream);
+            mv.push_back(value);
+            if(value == 0){
+                u32 num_zeros = stream.read_bits(4);
+                for(u32 count = 0; count < num_zeros; count++){
+                    mv.push_back(0);
+                }
+                idx += num_zeros;
+            }
+            idx++;
+        }
     }
 
 }
