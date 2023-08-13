@@ -244,11 +244,11 @@ namespace dct{
     Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
         double multiplier;
         if(quality == low){
-            multiplier = 2;
+            multiplier = 3;
         }else if(quality == medium){
-            multiplier = 1;
+            multiplier = 1.5;
         }else{
-            multiplier = 0.5;
+            multiplier = 1;
         }
 
         Block8x8 result;
@@ -328,11 +328,11 @@ namespace dct{
     Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
         double multiplier;
         if(quality == low){
-            multiplier = 2;
+            multiplier = 3;
         }else if(quality == medium){
-            multiplier = 1;
+            multiplier = 1.5;
         }else{
-            multiplier = 0.5;
+            multiplier = 1;
         }
 
         Block8x8 result;
