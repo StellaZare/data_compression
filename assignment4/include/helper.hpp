@@ -43,13 +43,14 @@ namespace helper{
         // (0,0) coordinate of active block in the frame
         u32 B_x = (macro_idx % macroblocks_wide) * 16;
         u32 B_y = (macro_idx / macroblocks_wide) * 16;
-        
+
         // Search region boundaries (radius of 8)
         int v_x_min = (B_x-radius < 0)? 0 : B_x-radius;
         int v_x_max = (B_x+radius < prev_frame.get_Width()) ? B_x+radius : prev_frame.get_Width();
         int v_y_min = (B_y-radius < 0)? 0 : B_y-radius;
         int v_y_max = (B_y+radius < prev_frame.get_Height()) ? B_y+radius : prev_frame.get_Height();
 
+        double min_avg_difference {INT32_MAX};
         // Look for motion vectors
         for(int v_x = v_x_min; v_x < v_x_max; v_x++){
             for(int v_y = v_y_min; v_y < v_y_max; v_y++){
@@ -62,14 +63,20 @@ namespace helper{
                         avg_difference += std::abs(value);
                     }
                 }
-                if((avg_difference/256) <= 1){
-                    // Good vector found
+                avg_difference/=256;
+                // update the minimum value
+                if(avg_difference < min_avg_difference){
+                    min_avg_difference = avg_difference;
                     vector.first = v_x - B_x;
                     vector.second= v_y - B_y;
-                    // std::cerr << "avg_difference was " << avg_difference/256 << std::endl;
-                    return true;
                 }
             }
+        }
+        // if a good enough vector is found return
+        if(min_avg_difference <= 1){
+            std::cerr << "using avg_diff " << min_avg_difference << std::endl;
+            std::cerr << "vector " << vector.first << " " << vector.second << std::endl;
+            return true;
         }
         return false;
     }
