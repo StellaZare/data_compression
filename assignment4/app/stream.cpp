@@ -24,6 +24,20 @@ namespace stream{
         }
     }
 
+    void push_value_n(OutputBitStream& stream, int value, u16 num_bits){
+        if(value < 0){
+            // negative value push (1) value
+            stream.push_bit(1);
+            stream.push_bit(1);
+            stream.push_bits((-1*value), num_bits);
+        }else{
+            // positive or zero value push (0) value
+            stream.push_bit(1);
+            stream.push_bit(0);
+            stream.push_bits((value), num_bits);
+        }
+    }
+
     void push_delta_value(OutputBitStream& stream, int num){
         if(num > 0){
             // positive start with 10
@@ -111,6 +125,15 @@ namespace stream{
         bool sign = stream.read_bit();
         sign = stream.read_bit();
         int num  = stream.read_u16();
+        num = (sign == 1) ? (-1*num) : num ;
+        return num;
+    }
+
+    int read_value_n(InputBitStream& stream, u16 num_bits){
+        // (+) sign = 0    (-) sign = 1
+        bool sign = stream.read_bit();
+        sign = stream.read_bit();
+        int num  = stream.read_bits(num_bits);
         num = (sign == 1) ? (-1*num) : num ;
         return num;
     }

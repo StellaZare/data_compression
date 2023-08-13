@@ -10,6 +10,7 @@ namespace stream{
 
     void push_header(OutputBitStream& stream, dct::Quality q, u16 height, u16 width);
     void push_value(OutputBitStream& stream, int num);
+    void push_value_n(OutputBitStream& stream, int value, u16 num_bits);
     void push_delta_value(OutputBitStream& stream, int num);
     void push_quantized_array(OutputBitStream& stream, const Array64& array);
     u32 push_RLE_zeros(OutputBitStream& stream, const Array64& array, u32 start);
@@ -20,6 +21,7 @@ namespace stream{
 
     void read_header(InputBitStream& stream, dct::Quality& quality, u16& height, u16& width);
     int read_value(InputBitStream& stream);
+    int read_value_n(InputBitStream& stream, u16 num_bits);
     int read_delta_value(InputBitStream& stream);
     Array64 read_quantized_array(InputBitStream& stream);
     Array64 delta_to_quantized(const Array64& delta);

@@ -74,8 +74,8 @@ namespace helper{
         }
         // if a good enough vector is found return
         if(min_avg_difference <= 1){
-            std::cerr << "using avg_diff " << min_avg_difference << std::endl;
-            std::cerr << "vector " << vector.first << " " << vector.second << std::endl;
+            // std::cerr << "using avg_diff " << min_avg_difference << std::endl;
+            // std::cerr << "vector " << vector.first << " " << vector.second << std::endl;
             return true;
         }
         return false;
@@ -138,7 +138,7 @@ namespace helper{
 
     void push_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, OutputBitStream& output_stream){
         // Push number of motion vectors
-        stream::push_value(output_stream, motion_vectors.size());
+        stream::push_value_n(output_stream, motion_vectors.size(), 9);
 
         // No motion vectors to push so return 
         if(motion_vectors.size() == 0)
@@ -146,8 +146,8 @@ namespace helper{
 
         // Push the first motion vector as u16
         std::pair<int, int>& first_vector = motion_vectors.front();
-        stream::push_value(output_stream, first_vector.first);
-        stream::push_value(output_stream, first_vector.second);
+        stream::push_value_n(output_stream, first_vector.first, 3);
+        stream::push_value_n(output_stream, first_vector.second, 3);
         std::pair<int, int> prev_vector = first_vector;
         motion_vectors.pop_front();
 
@@ -247,12 +247,12 @@ namespace helper{
 
     void read_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, InputBitStream& input_stream){
         // push number of motion vectors
-        int num_vectors = stream::read_value(input_stream);
+        int num_vectors = stream::read_value_n(input_stream, 9);
 
         std::pair<int, int> first_vector;
         if (num_vectors > 0){
-            first_vector.first = stream::read_value(input_stream);
-            first_vector.second = stream::read_value(input_stream);
+            first_vector.first = stream::read_value_n(input_stream, 3);
+            first_vector.second = stream::read_value_n(input_stream, 3);
             motion_vectors.push_back(first_vector);
             num_vectors--;
         }
