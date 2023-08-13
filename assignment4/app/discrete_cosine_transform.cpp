@@ -124,11 +124,12 @@ namespace dct{
 
     void get_prev_blocks(u32 macro_idx, YUVFrame420& prev_frame, const std::pair<u32, u32>& vector, std::vector<Block8x8>& prev_blocks){
         
-        u32 scaled_width = prev_frame.get_Width() / 2;
-        u32 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
+        u32 macroblocks_wide = prev_frame.get_Width() / 16;
+
         // (0,0) coordinate of active block in the frame
-        u32 B_x = macro_idx / C_blocks_wide;
-        u32 B_y = macro_idx % C_blocks_wide;
+        u32 B_x = (macro_idx % macroblocks_wide) * 16;
+        u32 B_y = (macro_idx / macroblocks_wide) * 16;
+
         // (0,0) coordinate of compare block
         u32 P_x = B_x + vector.first;
         u32 P_y = B_y + vector.second;
@@ -138,25 +139,25 @@ namespace dct{
         // Top-left Y 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+c,P_y+r);
+                block.at(r).at(c) = prev_frame.Y(P_x+c, P_y+r);
         prev_blocks.push_back(block);
         
         // Top-right 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+8+c,P_y+r);
+                block.at(r).at(c) = prev_frame.Y(P_x+8+c, P_y+r);
         prev_blocks.push_back(block);
 
         // Bottom-left 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+c,P_y+8+r);
+                block.at(r).at(c) = prev_frame.Y(P_x+c, P_y+8+r);
         prev_blocks.push_back(block);
 
         // Bottom-right 8x8 sub-block
         for(u32 r = 0; r < 8; r++)
             for(u32 c = 0; c < 8; c++)
-                block.at(r).at(c) = prev_frame.Y(P_x+8+c,P_y+8+r);
+                block.at(r).at(c) = prev_frame.Y(P_x+8+c, P_y+8+r);
         prev_blocks.push_back(block);
 
         //Push back Cb block

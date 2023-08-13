@@ -38,11 +38,12 @@ namespace helper{
     /* ----- Compressor Code ----- */
 
     bool find_motion_vector(const Block16x16& block, YUVFrame420& prev_frame, u32 macro_idx, std::pair<int,int>& vector, int radius = 8){
-        int scaled_width = prev_frame.get_Width() / 2;
-        int C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
-        // (0,0) coordinate of block in the frame
-        int B_x = macro_idx / C_blocks_wide;
-        int B_y = macro_idx % C_blocks_wide;
+        u32 macroblocks_wide = prev_frame.get_Width() / 16;
+
+        // (0,0) coordinate of active block in the frame
+        u32 B_x = (macro_idx % macroblocks_wide) * 16;
+        u32 B_y = (macro_idx / macroblocks_wide) * 16;
+        
         // Search region boundaries (radius of 8)
         int v_x_min = (B_x-radius < 0)? 0 : B_x-radius;
         int v_x_max = (B_x+radius < prev_frame.get_Width()) ? B_x+radius : prev_frame.get_Width();
