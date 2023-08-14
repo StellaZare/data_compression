@@ -94,6 +94,7 @@ int main(int argc, char** argv){
         std::list<bool> flags;
         std::list<Block8x8> compressed_blocks;
         std::list<std::pair<int, int>> motion_vectors;
+        double num_bad_motion_vectors {0};
 
         for(u32 macro_idx = 0; macro_idx < num_macro_blocks; macro_idx++){
             // create 16x16 Y-block
@@ -102,8 +103,10 @@ int main(int argc, char** argv){
 
             // Look for motion vector (assume non found)
             std::pair<int, int> vector {0, 0};
-            if (frame_number && helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector)){
-            // if (!is_first_frame){
+            bool good_motion_vector = helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector);
+            if(!good_motion_vector)
+                num_bad_motion_vectors++;
+            if (frame_number && good_motion_vector){
                 flags.push_back(1);
                 motion_vectors.push_back(vector);
                 helper::compress_P_block(compressed_blocks, uncompressed_blocks, macro_idx, Y_blocks, Cb_blocks, Cr_blocks, quality, previous_frame, vector);
@@ -119,8 +122,12 @@ int main(int argc, char** argv){
         helper::push_compressed_blocks(flags, compressed_blocks, output_stream);
         // reconstruct prev frame
         previous_frame = helper::reconstruct_prev_frame(uncompressed_blocks, num_macro_blocks, height, width);
-        // Send an I-frame every 120 frames
-        frame_number = (frame_number > 120) ? 0 : frame_number+1;
+
+        // Send an I-frame every 120 frames or if too many bad motion vectors
+        if(frame_number > 120 || (num_bad_motion_vectors/num_macro_blocks) >= 0.25)
+            frame_number = 0;
+        else    
+            frame_number++;
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data
