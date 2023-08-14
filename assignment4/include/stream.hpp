@@ -14,7 +14,7 @@ namespace stream{
     void push_delta_value(OutputBitStream& stream, int num);
     void push_quantized_array(OutputBitStream& stream, const Array64& array);
     u32 push_RLE_zeros(OutputBitStream& stream, const Array64& array, u32 start);
-    void push_motion_vector_RLE(OutputBitStream& stream, std::vector<int> mv);
+    void push_motion_vector_RLE(OutputBitStream& stream, const std::vector<int>& mv);
     Array64 quantized_to_delta(const Array64& quantized);
     void push_quantized_array_delta(OutputBitStream& stream, const Array64& array);
 
