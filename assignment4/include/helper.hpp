@@ -42,14 +42,20 @@ namespace helper{
         u32 macroblocks_wide = prev_frame.get_Width() / 16;
 
         // (0,0) coordinate of active block in the frame
-        u32 B_x = (macro_idx % macroblocks_wide) * 16;
-        u32 B_y = (macro_idx / macroblocks_wide) * 16;
+        int B_x = (macro_idx % macroblocks_wide) * 16;
+        int B_y = (macro_idx / macroblocks_wide) * 16;
+
+        // std::cerr << "macro_idx " << macro_idx << std::endl;
+        // std::cerr << "block co-ordinates " << B_x << " " << B_y << std::endl;
 
         // Search region boundaries (radius of 8)
         int v_x_min = (B_x-radius < 0)? 0 : B_x-radius;
         int v_x_max = (B_x+radius < prev_frame.get_Width()) ? B_x+radius : prev_frame.get_Width();
         int v_y_min = (B_y-radius < 0)? 0 : B_y-radius;
         int v_y_max = (B_y+radius < prev_frame.get_Height()) ? B_y+radius : prev_frame.get_Height();
+
+        // std::cerr << "range of x " << v_x_min << " " << v_x_max << std::endl;
+        // std::cerr << "range of y " << v_y_min << " " << v_y_max << std::endl;
 
         double min_avg_difference {INT32_MAX};
         // Look for motion vectors
@@ -65,6 +71,7 @@ namespace helper{
                     }
                 }
                 avg_difference/=256;
+                // std::cerr << "checking " << v_x << " " << v_y << " avg difference " << avg_difference << std::endl;
                 // update the minimum value
                 if(avg_difference < min_avg_difference){
                     min_avg_difference = avg_difference;
