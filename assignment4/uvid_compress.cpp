@@ -61,7 +61,7 @@ int main(int argc, char** argv){
 
     // To manage previous frame 
     YUVFrame420 previous_frame {width, height};
-    bool is_first_frame {true};
+    u32 frame_number {0};
 
     while (reader.read_next_frame()){
         // Get the active frame
@@ -102,7 +102,7 @@ int main(int argc, char** argv){
 
             // Look for motion vector (assume non found)
             std::pair<int, int> vector {0, 0};
-            if (!is_first_frame && helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector)){
+            if (frame_number && helper::find_motion_vector(macroblock, previous_frame, macro_idx, vector)){
             // if (!is_first_frame){
                 flags.push_back(1);
                 motion_vectors.push_back(vector);
@@ -119,7 +119,8 @@ int main(int argc, char** argv){
         helper::push_compressed_blocks(flags, compressed_blocks, output_stream);
         // reconstruct prev frame
         previous_frame = helper::reconstruct_prev_frame(uncompressed_blocks, num_macro_blocks, height, width);
-        is_first_frame = false;
+        // Send an I-frame every 120 frames
+        frame_number = (frame_number > 120) ? 0 : frame_number+1;
     }
 
     output_stream.push_byte(0); //Flag to indicate end of data
