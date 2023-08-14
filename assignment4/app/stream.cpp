@@ -86,13 +86,13 @@ namespace stream{
                 push_delta_value(stream, mv.at(idx++));
             }else{
                 u32 count = idx +1;
-                while(count < mv.size() && mv.at(count) == 0 && count-idx < 16){
+                while(count < mv.size() && mv.at(count) == 0 && count-idx < 8){
                     count++;
                 }
                 u32 num_zeros = count - idx -1;
                 // push initial 0 then count
                 stream.push_bit(0);
-                stream.push_bits(num_zeros, 5);
+                stream.push_bits(num_zeros, 3);
                 idx = count;
             }
         }
@@ -233,7 +233,7 @@ namespace stream{
             int value = read_delta_value(stream);
             mv.push_back(value);
             if(value == 0){
-                u32 num_zeros = stream.read_bits(5);
+                u32 num_zeros = stream.read_bits(3);
                 for(u32 count = 0; count < num_zeros; count++){
                     mv.push_back(0);
                 }
