@@ -246,7 +246,7 @@ namespace dct{
         if(quality == low){
             multiplier = 3;
         }else if(quality == medium){
-            multiplier = 1.5;
+            multiplier = 2;
         }else{
             multiplier = 1;
         }
@@ -330,7 +330,7 @@ namespace dct{
         if(quality == low){
             multiplier = 3;
         }else if(quality == medium){
-            multiplier = 1.5;
+            multiplier = 2;
         }else{
             multiplier = 1;
         }
