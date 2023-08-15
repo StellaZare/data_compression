@@ -15,7 +15,7 @@ struct MinHeapNode {
     int data;
  
     // Frequency of the character
-    unsigned freq;
+    double freq;
  
     // Left and right child of this node
     struct MinHeapNode *left, *right;
@@ -38,7 +38,7 @@ struct MinHeap {
 // A utility function allocate a new
 // min heap node with given character
 // and frequency of the character
-struct MinHeapNode* newNode(char data, unsigned freq)
+struct MinHeapNode* newNode(char data, double freq)
 {
     struct MinHeapNode* temp = (struct MinHeapNode*)malloc(
         sizeof(struct MinHeapNode));
@@ -186,7 +186,7 @@ int isLeaf(struct MinHeapNode* root)
 // data[] in min heap. Initially size of
 // min heap is equal to capacity
 struct MinHeap* createAndBuildMinHeap(int data[],
-                                      int freq[], int size)
+                                      double freq[], int size)
  
 {
  
@@ -203,7 +203,7 @@ struct MinHeap* createAndBuildMinHeap(int data[],
  
 // The main function that builds Huffman tree
 struct MinHeapNode* buildHuffmanTree(int data[],
-                                     int freq[], int size)
+                                     double freq[], int size)
  
 {
     struct MinHeapNode *left, *right, *top;
@@ -278,7 +278,7 @@ void printCodes(struct MinHeapNode* root, int arr[],
 // The main function that builds a
 // Huffman Tree and print codes by traversing
 // the built Huffman Tree
-void HuffmanCodes(int data[], int freq[], int size)
+void HuffmanCodes(int data[], double freq[], int size)
  
 {
     // Construct Huffman Tree
@@ -297,13 +297,28 @@ int main()
 {
  
     int arr[] = { -100, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 100, 110, 120, 150};
-    int freq[] = { 
-        35428, 16975, 32697, 80487, 287640, 1535888, 1778168, 1531771, 286559, 79387, 32874, 17497, 34434, 242338, 135733, 1306758
+    double probability[] = { 
+        0.00528108192,
+        0.002621367365,
+        0.00506663023,
+        0.0126354782,
+        0.04378956096,
+        0.2619029835,
+        0.2966863319,
+        0.258156177,
+        0.04418603243,
+        0.01262818411,
+        0.005256055659,
+        0.002723026115,
+        0.005238404228,
+        0.04382868637,
+        0.02464491912,
+        0.3625013234
     };
  
     int size = sizeof(arr) / sizeof(arr[0]);
  
-    HuffmanCodes(arr, freq, size);
+    HuffmanCodes(arr, probability, size);
  
     return 0;
 }
