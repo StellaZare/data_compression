@@ -7,6 +7,63 @@ namespace stream{
     std::map<int,int> delta_frequency {};
     std::map<int,int> RLE_frequency {}; 
 
+        std::map<int, u32> symbol_length {
+        {-100, 8},  // negative escape symbol
+        {-5, 9},
+        {-4, 8},
+        {-3, 6},
+        {-2, 5},
+        {-1, 3},
+        {0, 1},
+        {1, 3},
+        {2, 5},
+        {3, 6},
+        {4, 8},
+        {5, 9},
+        {100, 6},   // positive escape symbol
+        {110, 5},   // 4 zeros
+        {120, 4},   // 8 zeros
+        {150, 5}    // EOB - the rest of the block is zeros
+    };
+
+    std::map<int, u32> symbol_encoding {
+        {-100, 201},  // negative escape symbol
+        {-5, 406},
+        {-4, 202},
+        {-3, 49},
+        {-2, 31},
+        {-1, 5},
+        {0, 0},
+        {1, 4},
+        {2, 29},
+        {3, 51},
+        {4, 200},
+        {5, 407},
+        {100, 48},   // positive escape symbol
+        {110, 30},   // 4 zeros
+        {120, 13},   // 8 zeros
+        {150, 28}    // EOB - the rest of the block is zeros
+    };
+
+    std::map<int, u32> encoding_symbol {
+        {201, -100},  // negative escape symbol
+        {406, -5},
+        {202, -4},
+        {49, -3},
+        {31, -2},
+        {5, -1},
+        {0, 0},
+        {4, 1},
+        {29, 2},
+        {51, 3},
+        {200, 4},
+        {407, 5},
+        {48, 100},   // positive escape symbol
+        {30, 110},   // 4 zeros
+        {13, 120},   // 8 zeros
+        {28, 150}    // EOB - the rest of the block is zeros
+    };
+
     void print_histograms(){
         std::cerr << "delta histogram" << std::endl;
         int sum_delta {0};
@@ -100,14 +157,6 @@ namespace stream{
             idx++;
         }
 
-        // if(count > 6){
-        //     stream.push_bit(0);
-        //     stream.push_bits(count, 6);
-        // }else{
-        //     for(u32 i = 0; i < count; i++)
-        //         stream.push_bit(0);
-        // }
-
         // push initial 0 then count
         stream.push_bit(0);
         stream.push_bits(count, 6);
@@ -117,7 +166,6 @@ namespace stream{
             RLE_frequency[1000]++;
         else
             RLE_frequency[count]++;
-
         return count;
     }
 
@@ -155,25 +203,76 @@ namespace stream{
         return delta_values;
     }
 
-    void push_quantized_array_delta(OutputBitStream& stream, const Array64& array){
-        Array64 delta_values = quantized_to_delta(array);
+    void push_symbol_huffman(OutputBitStream& stream, int symbol){
+        // std::cerr << "push_symbol_huffman " << std::endl;
+        u32 num_bits = symbol_length[symbol];
+        u32 code_bits = symbol_encoding[symbol];
 
-        for(double delta : delta_values){
-            delta_frequency[delta]++;
+        for(u32 idx = 0; idx < num_bits; idx++)
+            stream.push_bit(code_bits >> (num_bits - idx - 1) & 1);
+    }
+
+    void push_unary(OutputBitStream& stream, u32 value){
+        // std::cerr << "push_unary value " << value << std::endl;
+        for(u32 idx = 0; idx < value; idx++)
+            stream.push_bit(1);
+        stream.push_bit(0);
+    }
+
+    u32 count_RLE_zeros(const Array64& array, u32 start){
+        // std::cerr << "count_RLE_zeros" << std::endl;
+        u32 idx = start; 
+        u32 count = 0;
+        while(idx < 64 && array.at(idx) == 0){
+            count++;
+            idx++;
         }
+        return count;
+    }
 
-        // push first 2 as normal
+    void push_quantized_array_delta(OutputBitStream& stream, const Array64& array){
+        // std::cerr << "push quantized array delta " << std::endl;
+        Array64 delta_values = quantized_to_delta(array);
+        for(double delta : delta_values)
+            delta_frequency[delta]++;
+
+        // Send first 2 values as normal
         push_value(stream, delta_values.at(0));
         push_value(stream, delta_values.at(1));
 
+        // Use huffman codes to send over delta values
         u32 idx = 2;
         while(idx < 64){
-            if(delta_values.at(idx) == 0){
-                idx += push_RLE_zeros(stream, delta_values, idx+1);
+            if(delta_values.at(idx) < -5){
+                push_symbol_huffman(stream, -100);
+                push_unary(stream, -1 * delta_values.at(idx++));
+            }else if(delta_values.at(idx) > 5){
+                push_symbol_huffman(stream, 100);
+                push_unary(stream, delta_values.at(idx++));
+            }else if(delta_values.at(idx) != 0){
+                push_symbol_huffman(stream, delta_values.at(idx++));
             }else{
-                push_delta_value(stream, delta_values.at(idx));
-            }           
-            idx++;
+                // count the run length of zero
+                u32 num_zeros = count_RLE_zeros(delta_values, idx);
+                idx += num_zeros;
+
+                if(idx == 64){  
+                    push_symbol_huffman(stream, 150);
+                    return;
+                }
+                while(num_zeros >= 8){
+                    push_symbol_huffman(stream, 120);   // 8 zeros
+                    num_zeros -= 8;
+                }
+                while(num_zeros >= 4){
+                    push_symbol_huffman(stream, 110);   // 4 zeros
+                    num_zeros -= 4;
+                }
+                while(num_zeros > 0){
+                    push_symbol_huffman(stream, 0);     // single zero
+                    num_zeros --;
+                }
+            }
         }
     }
 
@@ -250,27 +349,6 @@ namespace stream{
         }
     }
 
-    Array64 read_quantized_array_delta(InputBitStream& stream){
-        Array64 delta_values;
-        delta_values.at(0) = read_value(stream); 
-        delta_values.at(1) = read_value(stream); 
-
-        u32 idx = 2;
-        while(idx < 64){
-            int delta = read_delta_value(stream);
-            delta_values.at(idx) = delta;
-            idx++;
-            if(delta == 0){
-                u32 count = stream.read_bits(6);
-                add_RLE_zeros(delta_values, idx, count);
-                idx+=count;
-            }
-        }
-
-        Array64 quantized = delta_to_quantized(delta_values);
-        return quantized;
-    }
-
     std::vector<int> read_motion_vector_RLE(InputBitStream& stream, int num_vectors){
         std::vector<int> mv;
 
@@ -292,6 +370,59 @@ namespace stream{
             idx++;
         }
         return mv;
+    }
+
+    int read_symbol_huffman(InputBitStream& stream){
+        u32 value = 0;
+        u32 iter = 0;
+        while(iter < 100){
+            value = (value << 1) | stream.read_bit();
+            auto symbol_ref = encoding_symbol.find(value);
+            if (symbol_ref != encoding_symbol.end()){
+                return symbol_ref->second;      
+            }
+        }
+        std::cerr<<"inifinite loop line 377"<<std::endl;
+    }
+
+    int read_unary(InputBitStream& stream){
+        int value = 0;
+        while(stream.read_bit())
+            value++;
+        return value;
+    }
+
+    Array64 read_quantized_array_delta(InputBitStream& stream){
+        Array64 delta_values;
+
+        // Read first 2 as normal
+        delta_values.at(0) = read_value(stream);
+        delta_values.at(1) = read_value(stream);
+
+        // Read the rest with huffman codes 
+        u32 idx = 2;
+        while(idx < 64){
+            int curr_symbol = read_symbol_huffman(stream);
+            if(curr_symbol == -100){
+                delta_values.at(idx++) = -1 * read_unary(stream);
+            }else if(curr_symbol == 100){
+                delta_values.at(idx++) = 1 * read_unary(stream);
+            }else if(curr_symbol == 110){
+                for(u32 i = 0; i < 4; i++)
+                    delta_values.at(idx++) = 0;
+            }else if(curr_symbol == 120){
+                for(u32 i = 0; i < 8; i++)
+                    delta_values.at(idx++) = 0;
+            }else if(curr_symbol == 150){
+                while(idx < 64)
+                    delta_values.at(idx++) = 0;
+            }else{
+                delta_values.at(idx++) = curr_symbol;
+            }
+        }
+
+        Array64 quantized = delta_to_quantized(delta_values);
+        return quantized;
     }
 
 }
