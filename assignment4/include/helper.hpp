@@ -135,63 +135,29 @@ namespace helper{
         uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(5), uncompressed_delta));
     }
 
-    // void push_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, OutputBitStream& output_stream){
-    //     // Push number of motion vectors
-    //     stream::push_value_n(output_stream, motion_vectors.size(), 9);
-
-    //     // No motion vectors to push so return 
-    //     if(motion_vectors.size() == 0)
-    //         return;
-
-    //     // Push the first motion vector as u16
-    //     std::pair<int, int>& first_vector = motion_vectors.front();
-    //     stream::push_value_n(output_stream, first_vector.first, 4);
-    //     stream::push_value_n(output_stream, first_vector.second, 4);
-    //     std::pair<int, int> prev_vector = first_vector;
-    //     motion_vectors.pop_front();
-
-    //     // Push the rest of the motion vectors as delta values 
-    //     while(!motion_vectors.empty()){
-    //         std::pair<int, int>& curr_vector = motion_vectors.front();
-    //         stream::push_delta_value(output_stream, curr_vector.first-prev_vector.first);
-    //         stream::push_delta_value(output_stream, curr_vector.second-prev_vector.second);
-    //         prev_vector = curr_vector;
-    //         motion_vectors.pop_front();
-    //     }
-    // }
-
     void push_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, OutputBitStream& output_stream){
         // Push number of motion vectors
-        u32 num_motion_vectors = motion_vectors.size();
-        stream::push_value_n(output_stream, num_motion_vectors, 9);
+        stream::push_value_n(output_stream, motion_vectors.size(), 9);
 
         // No motion vectors to push so return 
-        if(motion_vectors.empty())
+        if(motion_vectors.size() == 0)
             return;
 
-        // Format as vector
-        std::vector <int> mv;
-
-        // Add the first vector values 
+        // Push the first motion vector as u16
         std::pair<int, int>& first_vector = motion_vectors.front();
-        mv.push_back(first_vector.first);
-        mv.push_back(first_vector.second);
-
-        // Save the previous vector for delta
+        stream::push_value_n(output_stream, first_vector.first, 4);
+        stream::push_value_n(output_stream, first_vector.second, 4);
         std::pair<int, int> prev_vector = first_vector;
         motion_vectors.pop_front();
 
         // Push the rest of the motion vectors as delta values 
         while(!motion_vectors.empty()){
             std::pair<int, int>& curr_vector = motion_vectors.front();
-            mv.push_back(curr_vector.first-prev_vector.first);
-            mv.push_back(curr_vector.second-prev_vector.second);
-
+            stream::push_delta_value(output_stream, curr_vector.first-prev_vector.first);
+            stream::push_delta_value(output_stream, curr_vector.second-prev_vector.second);
             prev_vector = curr_vector;
             motion_vectors.pop_front();
         }
-        assert(mv.size() == 2 * num_motion_vectors);
-        stream::push_motion_vector_RLE(output_stream, mv);
     }
 
     void push_compressed_blocks(const std::list<bool>& flags, std::list<Block8x8>& compressed_blocks, OutputBitStream& output_stream){
@@ -278,52 +244,26 @@ namespace helper{
         Cr_blocks.push_back(dct::add_delta_block(prev_blocks.at(5), delta_block));
     }
 
-    // void read_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, InputBitStream& input_stream){
-    //     // push number of motiocln vectors
-    //     int num_vectors = stream::read_value_n(input_stream, 9);
-
-    //     std::pair<int, int> first_vector;
-    //     if (num_vectors > 0){
-    //         first_vector.first = stream::read_value_n(input_stream, 4);
-    //         first_vector.second = stream::read_value_n(input_stream, 4);
-    //         motion_vectors.push_back(first_vector);
-    //         num_vectors--;
-    //     }
-
-    //     std::pair<int, int> prev_vector = first_vector;
-    //     while(num_vectors > 0){
-    //         std::pair<int, int> curr_vector;
-    //         curr_vector.first = stream::read_delta_value(input_stream) + prev_vector.first;
-    //         curr_vector.second = stream::read_delta_value(input_stream) + prev_vector.second;
-    //         motion_vectors.push_back(curr_vector);
-    //         prev_vector = curr_vector;
-    //         num_vectors--;
-    //     }
-    // }
-
     void read_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, InputBitStream& input_stream){
-        // push number of motion vectors
+        // push number of motiocln vectors
         int num_vectors = stream::read_value_n(input_stream, 9);
 
-        if(num_vectors <= 0)
-            return;
-
-        std::vector<int> mv = stream::read_motion_vector_RLE(input_stream, num_vectors);
-
         std::pair<int, int> first_vector;
-        first_vector.first = mv.at(0);
-        first_vector.second = mv.at(1);
-        motion_vectors.push_back(first_vector);
+        if (num_vectors > 0){
+            first_vector.first = stream::read_value_n(input_stream, 4);
+            first_vector.second = stream::read_value_n(input_stream, 4);
+            motion_vectors.push_back(first_vector);
+            num_vectors--;
+        }
+
         std::pair<int, int> prev_vector = first_vector;
-
-        assert(mv.size() == 2 * num_vectors);
-
-        for(u32 idx = 2; idx < mv.size(); idx += 2){
+        while(num_vectors > 0){
             std::pair<int, int> curr_vector;
-            curr_vector.first = mv.at(idx) + prev_vector.first;
-            curr_vector.second = mv.at(idx+1) + prev_vector.second;
+            curr_vector.first = stream::read_delta_value(input_stream) + prev_vector.first;
+            curr_vector.second = stream::read_delta_value(input_stream) + prev_vector.second;
             motion_vectors.push_back(curr_vector);
             prev_vector = curr_vector;
+            num_vectors--;
         }
     }
 }
