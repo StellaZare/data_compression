@@ -4,6 +4,37 @@
 
 namespace stream{
 
+    std::map<int,int> delta_frequency {};
+    std::map<int,int> RLE_frequency {}; 
+
+    void print_histograms(){
+        std::cerr << "delta histogram" << std::endl;
+        int sum_delta {0};
+        int neg_x {};
+        int pos_x {};
+        for (const auto& [value, frequency] : delta_frequency){
+            if(value < -5)
+                neg_x += frequency;
+            else if(value > 5)
+                pos_x += frequency;
+            sum_delta+=frequency;
+        }
+        for(int value = -5; value <= 5; value++){
+            std::cerr << value << " " << delta_frequency[value] << std::endl;
+        }
+        std::cerr << "neg_x" << neg_x << std::endl;
+        std::cerr << "neg_y" << pos_x << std::endl;
+        std::cerr << "sum delta " << sum_delta << std::endl;
+        std::cerr << "------------------------------------------------" << std::endl;
+        int sum_RLE {0};
+        std::cerr << "RLE histogram" << std::endl;
+        for (const auto& [value, frequency] : RLE_frequency){
+            std::cerr << "RLE: " << value+1 << " with frequency " << frequency << std::endl;
+            sum_RLE+=frequency;
+        }
+        std::cerr << "sum RLE " << sum_RLE << std::endl;
+    }
+
     void push_header(OutputBitStream& stream, dct::Quality q, u16 height, u16 width){
         stream.push_bits(q, 2);
         stream.push_u16(height);
@@ -69,9 +100,24 @@ namespace stream{
             idx++;
         }
 
+        // if(count > 6){
+        //     stream.push_bit(0);
+        //     stream.push_bits(count, 6);
+        // }else{
+        //     for(u32 i = 0; i < count; i++)
+        //         stream.push_bit(0);
+        // }
+
         // push initial 0 then count
         stream.push_bit(0);
         stream.push_bits(count, 6);
+
+  
+        if(idx == 64)
+            RLE_frequency[1000]++;
+        else
+            RLE_frequency[count]++;
+
         return count;
     }
 
@@ -111,6 +157,10 @@ namespace stream{
 
     void push_quantized_array_delta(OutputBitStream& stream, const Array64& array){
         Array64 delta_values = quantized_to_delta(array);
+
+        for(double delta : delta_values){
+            delta_frequency[delta]++;
+        }
 
         // push first 2 as normal
         push_value(stream, delta_values.at(0));

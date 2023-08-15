@@ -1,10 +1,20 @@
+#ifndef STREAM
+#define STREAM
+
 #include <vector>
 #include <array>
+#include <map>
 #include "output_stream.hpp"
 #include "input_stream.hpp"
 #include "discrete_cosine_transform.hpp"
 
+// extern std::map<int,int> delta_frequency;
+// extern std::map<int,int> RLE_frequency;
+
+
 namespace stream{
+
+    void print_histograms();
 
     /* ----- Compressor code -----*/
 
@@ -31,3 +41,5 @@ namespace stream{
     Array64 read_quantized_array_delta(InputBitStream& stream);
   
 }
+
+#endif

@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <tuple>
 #include <queue>
+#include <map>
 #include "output_stream.hpp"
 #include "stream.hpp"
 #include "yuv_stream.hpp"
@@ -132,6 +133,8 @@ int main(int argc, char** argv){
 
     output_stream.push_byte(0); //Flag to indicate end of data
     output_stream.flush_to_byte();
+
+    // stream::print_histograms();
 
     return 0;
 }
