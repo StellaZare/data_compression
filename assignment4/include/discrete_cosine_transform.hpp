@@ -116,13 +116,13 @@ namespace dct {
     void partition_Y_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
     void partition_C_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
     Block8x8 get_dct(const Block8x8 &block);
-    Block8x8 quantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block);
+    Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
     Direction get_direction(u32 r, u32 c, Direction curr);
     Array64 block_to_array(const Block8x8& block);
 
     /* ----- Decompressor Functions ----- */
     Block8x8 array_to_block(const Array64& array);
-    Block8x8 unquantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block);
+    Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
     Block8x8 get_inverse_dct(const Block8x8& block);
     void undo_partition_C_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);
     void undo_partition_Y_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);

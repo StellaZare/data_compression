@@ -8,57 +8,60 @@ namespace stream{
     std::map<int,int> RLE_frequency {}; 
     std::map<int, int> huffman_freq {};
 
-    std::map<int, int> symbol_length {
-        {-100, 9}, // negative escape symbol
-        {-5, 9},
-        {-4, 8},
-        {-3, 7},
-        {-2, 5},
-        {-1, 2},
-        {0, 2},
-        {1, 3},
-        {2, 6},
-        {3, 7},
-        {4, 8},
-        {5, 9},
-        {100, 9}, // positive escape symbol
-        {120, 5}, // 8 zeros
-        {150, 2} // EOB - the rest of the block is zeros
+    std::map<int, u32> symbol_length {
+        {-100, 8},   // negative escape symbol
+        {-5, 9},  
+        {-4, 9},  
+        {-3, 7},  
+        {-2, 5},  
+        {-1, 2},  
+        {0, 2},   
+        {1, 3},   
+        {2, 5},   
+        {3, 7},   
+        {4, 9},   
+        {5, 9},   
+        {100, 8},    // positive escape symbol
+        {110, 6},    // 4 zeros
+        {120, 6},    // 8 zeros
+        {150, 2}     // EOB - the rest of the block is zeros
     };
 
-    std::map<int, int> symbol_encoding {
-        {-100, 500}, // negative escape symbol
-        {-5, 501},
-        {-4, 248},
-        {-3, 122},
-        {-2, 28},
-        {-1, 0},
-        {0, 1},
-        {1, 6},
-        {2, 60},
-        {3, 123},
-        {4, 249},
-        {5, 502},
-        {100, 503}, // positive escape symbol
-        {120, 29}, // 8 zeros
-        {150, 2} // EOB - the rest of the block is zeros
+    std::map<int, u32> symbol_encoding {
+        {-100, 218},   
+        {-5, 394},     
+        {-4, 438},     
+        {-3, 108},     
+        {-2, 26},      
+        {-1, 1},       
+        {0, 0},     
+        {1, 7},     
+        {2, 25},    
+        {3, 99},    
+        {4, 439},   
+        {5, 395},   
+        {100, 196},   
+        {110, 30},    
+        {120, 55},    
+        {150, 2}      
     };
 
-    std::map<int, int> encoding_symbol {
-        {500, -100},
-        {501, -5},
-        {248, -4},
-        {122, -3},
-        {28, -2},
-        {0, -1},
-        {1, 0},
-        {6, 1},
-        {60, 2},
-        {123, 3},
-        {249, 4},
-        {502, 5},
-        {503, 100},
-        {29, 120},
+    std::map<int, u32> encoding_symbol {
+        {218, -100},
+        {394, -5},
+        {438, -4},
+        {108, -3},
+        {26, -2},
+        {1, -1},
+        {0, 0},
+        {7, 1},
+        {25, 2},
+        {99, 3},
+        {439, 4},
+        {395, 5},
+        {196, 100},  
+        {30, 110}, 
+        {55, 120}, 
         {2, 150}
     };
 

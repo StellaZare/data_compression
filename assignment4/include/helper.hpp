@@ -85,20 +85,20 @@ namespace helper{
         u32 Y_idx = 4 * C_idx;
         for(u32 count = 0; count < 4; count++){
             // Take the DCT and quantize
-            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(Y_blocks.at(Y_idx+count)), quality, true, false);
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(Y_blocks.at(Y_idx+count)), quality, dct::luminance);
             // Push in array format
             compressed_blocks.push_back(quantized_block);
             // Unquantize and take the inverse DCT
-            uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, true, false)));
+            uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::luminance)));
         }
 
-        Block8x8 quantized_Cb_block = dct::quantize_block(dct::get_dct(Cb_blocks.at(C_idx)), quality, false, false);
+        Block8x8 quantized_Cb_block = dct::quantize_block(dct::get_dct(Cb_blocks.at(C_idx)), quality, dct::chrominance);
         compressed_blocks.push_back(quantized_Cb_block);
-        uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cb_block, quality, false, false)));
+        uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cb_block, quality, dct::chrominance)));
 
-        Block8x8 quantized_Cr_block = dct::quantize_block(dct::get_dct(Cr_blocks.at(C_idx)), quality, false, false);
+        Block8x8 quantized_Cr_block = dct::quantize_block(dct::get_dct(Cr_blocks.at(C_idx)), quality, dct::chrominance);
         compressed_blocks.push_back(quantized_Cr_block);
-        uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cr_block, quality, false, false)));
+        uncompressed_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(quantized_Cr_block, quality, dct::chrominance)));
     }
 
     void compress_P_block(std::list<Block8x8>& compressed_blocks, std::list<Block8x8>& uncompressed_blocks, u32 macro_idx, 
@@ -113,25 +113,25 @@ namespace helper{
             //Get the delta values 
             Block8x8 delta_block = dct::get_delta_block(Y_blocks.at(Y_idx+count), prev_blocks.at(count));
             // Take the DCT and quantize the delta values
-            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, true, true);
+            Block8x8 quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, dct::luminance);
             // Push in array format
             compressed_blocks.push_back(quantized_block);
             // Unquantize and take the inverse DCT of the delta values 
-            Block8x8 uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, true, true));
+            Block8x8 uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::luminance));
             // Unquantize and take the inverse DCT
             uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(count), uncompressed_delta));
         }
 
         Block8x8 delta_block = dct::get_delta_block(Cb_blocks.at(macro_idx), prev_blocks.at(4));
-        Block8x8 quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, false, true);
+        Block8x8 quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, dct::chrominance);
         compressed_blocks.push_back(quantized_block);
-        Block8x8 uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, false, true));
+        Block8x8 uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance));
         uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(4), uncompressed_delta));
 
         delta_block = dct::get_delta_block(Cr_blocks.at(macro_idx), prev_blocks.at(5));
-        quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, false, true);
+        quantized_block = dct::quantize_block(dct::get_dct(delta_block), quality, dct::chrominance);
         compressed_blocks.push_back(quantized_block);
-        uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, false, true));
+        uncompressed_delta = dct::get_inverse_dct(dct::unquantize_block(quantized_block, quality, dct::chrominance));
         uncompressed_blocks.push_back(dct::add_delta_block(prev_blocks.at(5), uncompressed_delta));
     }
 
@@ -211,13 +211,13 @@ namespace helper{
         for(u32 count = 0; count < 4; count++){
             Block8x8 Y_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
             // Unquantize and take the inverse dct
-            Y_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Y_block, quality, true, false)));
+            Y_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Y_block, quality, dct::luminance)));
         }
         Block8x8 Cb_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-        Cb_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cb_block, quality, false, false)));
+        Cb_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cb_block, quality, dct::chrominance)));
 
         Block8x8 Cr_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-        Cr_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cr_block, quality, false, false)));
+        Cr_blocks.push_back(dct::get_inverse_dct(dct::unquantize_block(Cr_block, quality, dct::chrominance)));
     }
 
     void decompress_P_block(std::vector<Block8x8>& Y_blocks, std::vector<Block8x8>& Cb_blocks, std::vector<Block8x8>& Cr_blocks, dct::Quality quality, InputBitStream& input_stream, 
@@ -230,17 +230,17 @@ namespace helper{
             // Create a block of delta values
             Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
             // Unquantize and take the inverse dct
-            delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, true, true));
+            delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::luminance));
             // Add delta_values to previous block
             Y_blocks.push_back(dct::add_delta_block(prev_blocks.at(count), delta_block));
         }
 
         Block8x8 delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-        delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, false, true));
+        delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::chrominance));
         Cb_blocks.push_back(dct::add_delta_block(prev_blocks.at(4), delta_block));
 
         delta_block = dct::array_to_block(stream::read_quantized_array_delta(input_stream));
-        delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, false, true));
+        delta_block = dct::get_inverse_dct(dct::unquantize_block(delta_block, quality, dct::chrominance));
         Cr_blocks.push_back(dct::add_delta_block(prev_blocks.at(5), delta_block));
     }
 
