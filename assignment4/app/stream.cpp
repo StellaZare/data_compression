@@ -7,60 +7,6 @@ namespace stream{
     std::map<int,int> delta_frequency {};
     std::map<int,int> RLE_frequency {}; 
 
-    // std::map<int, u32> symbol_length {
-    //     {-100, 8},  // negative escape symbol
-    //     {-5, 9},
-    //     {-4, 8},
-    //     {-3, 6},
-    //     {-2, 5},
-    //     {-1, 3},
-    //     {0, 1},
-    //     {1, 3},
-    //     {2, 5},
-    //     {3, 6},
-    //     {4, 8},
-    //     {5, 9},
-    //     {100, 6},   // positive escape symbol
-    //     {120, 4},   // 8 zeros
-    //     {150, 5}    // EOB - the rest of the block is zeros
-    // };
-
-    // std::map<int, u32> symbol_encoding {
-    //     {-100, 201},  // negative escape symbol
-    //     {-5, 406},
-    //     {-4, 202},
-    //     {-3, 49},
-    //     {-2, 31},
-    //     {-1, 5},
-    //     {0, 0},
-    //     {1, 4},
-    //     {2, 29},
-    //     {3, 51},
-    //     {4, 200},
-    //     {5, 407},
-    //     {100, 48},   // positive escape symbol
-    //     {120, 13},   // 8 zeros
-    //     {150, 28}    // EOB - the rest of the block is zeros
-    // };
-
-    // std::map<u32, int> encoding_symbol {
-    //     {201, -100},  // negative escape symbol
-    //     {406, -5},
-    //     {202, -4},
-    //     {49, -3},
-    //     {31, -2},
-    //     {5, -1},
-    //     {0, 0},
-    //     {4, 1},
-    //     {29, 2},
-    //     {51, 3},
-    //     {200, 4},
-    //     {407, 5},
-    //     {48, 100},   // positive escape symbol
-    //     {13, 120},   // 8 zeros
-    //     {28, 150}    // EOB - the rest of the block is zeros
-    // };
-
     std::map<int, u32> symbol_length {
         {-100, 9},  // negative escape symbol
         {-5, 9},
