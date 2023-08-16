@@ -125,7 +125,7 @@ int main(int argc, char** argv){
         previous_frame = helper::reconstruct_prev_frame(uncompressed_blocks, num_macro_blocks, height, width);
 
         // Send an I-frame every 120 frames or if too many bad motion vectors
-        if(frame_number > 120 || (num_bad_motion_vectors/num_macro_blocks) >= 0.25)
+        if(frame_number > 175 && (num_bad_motion_vectors/num_macro_blocks) >= 0.35)
             frame_number = 0;
         else    
             frame_number++;

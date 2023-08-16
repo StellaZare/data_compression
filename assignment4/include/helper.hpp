@@ -74,7 +74,7 @@ namespace helper{
             }
         }
         // if a good enough vector is found return
-        if(min_avg_difference <= 25){
+        if(min_avg_difference <= 50){
             return true;
         }
         return false;
