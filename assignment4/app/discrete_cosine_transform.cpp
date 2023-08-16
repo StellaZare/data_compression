@@ -240,22 +240,51 @@ namespace dct{
         return multiply_block(result, c_matrix_transpose);
     }
 
-    // returns the quantized block calculated using the provided quantization matrix at the provided quality 
-    Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
-        double multiplier;
-        if(quality == low){
-            multiplier = 3;
-        }else if(quality == medium){
-            multiplier = 2;
+    double get_multiplier(Quality quality, bool is_luminance, bool is_P_block){
+        if(is_luminance && is_P_block){
+            if(quality == low)
+                return 6;
+            else if(quality == medium)
+                return 4;
+            else
+                return 2;
+        }else if(is_luminance && !is_P_block){
+            if(quality == low)
+                return 3;
+            else if(quality == medium)
+                return 2;
+            else
+                return 1;
+        }else if(!is_luminance && is_P_block){
+            if(quality == low)
+                return 10;
+            else if(quality == medium)
+                return 8;
+            else
+                return 6;
         }else{
-            multiplier = 1;
+            if(quality == low)
+                return 6;
+            else if(quality == medium)
+                return 4;
+            else
+                return 2;
         }
+    }
+
+    // returns the quantized block calculated using the provided quantization matrix at the provided quality 
+    Block8x8 quantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block){
+        double multiplier = get_multiplier(quality, is_luminance, is_P_block);
 
         Block8x8 result;
-        for(u32 r = 0; r < 8; r++){
-            for(u32 c = 0; c < 8; c++){
-                result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * q_matrix.at(r).at(c)) );
-            }
+        if(is_luminance){
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * luminance.at(r).at(c)) );
+        }else{
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * chrominance.at(r).at(c)) );
         }
         return result;
     }
@@ -325,21 +354,18 @@ namespace dct{
     }
 
     // returns the unquantized block calculated using the provided quantization matrix at the provided quality 
-    Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
-        double multiplier;
-        if(quality == low){
-            multiplier = 3;
-        }else if(quality == medium){
-            multiplier = 2;
-        }else{
-            multiplier = 1;
-        }
+    Block8x8 unquantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block){
+        double multiplier = get_multiplier(quality, is_luminance, is_P_block);
 
         Block8x8 result;
-        for(u32 r = 0; r < 8; r++){
-            for(u32 c = 0; c < 8; c++){
-                result.at(r).at(c) = block.at(r).at(c) * (multiplier * q_matrix.at(r).at(c));
-            }
+        if (is_luminance){
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = block.at(r).at(c) * (multiplier * luminance.at(r).at(c));
+        }else{
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = block.at(r).at(c) * (multiplier * chrominance.at(r).at(c));
         }
         return result;
     }
