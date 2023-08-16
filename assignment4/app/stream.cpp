@@ -7,58 +7,112 @@ namespace stream{
     std::map<int,int> delta_frequency {};
     std::map<int,int> RLE_frequency {}; 
 
+    // std::map<int, u32> symbol_length {
+    //     {-100, 8},  // negative escape symbol
+    //     {-5, 9},
+    //     {-4, 8},
+    //     {-3, 6},
+    //     {-2, 5},
+    //     {-1, 3},
+    //     {0, 1},
+    //     {1, 3},
+    //     {2, 5},
+    //     {3, 6},
+    //     {4, 8},
+    //     {5, 9},
+    //     {100, 6},   // positive escape symbol
+    //     {120, 4},   // 8 zeros
+    //     {150, 5}    // EOB - the rest of the block is zeros
+    // };
+
+    // std::map<int, u32> symbol_encoding {
+    //     {-100, 201},  // negative escape symbol
+    //     {-5, 406},
+    //     {-4, 202},
+    //     {-3, 49},
+    //     {-2, 31},
+    //     {-1, 5},
+    //     {0, 0},
+    //     {1, 4},
+    //     {2, 29},
+    //     {3, 51},
+    //     {4, 200},
+    //     {5, 407},
+    //     {100, 48},   // positive escape symbol
+    //     {120, 13},   // 8 zeros
+    //     {150, 28}    // EOB - the rest of the block is zeros
+    // };
+
+    // std::map<u32, int> encoding_symbol {
+    //     {201, -100},  // negative escape symbol
+    //     {406, -5},
+    //     {202, -4},
+    //     {49, -3},
+    //     {31, -2},
+    //     {5, -1},
+    //     {0, 0},
+    //     {4, 1},
+    //     {29, 2},
+    //     {51, 3},
+    //     {200, 4},
+    //     {407, 5},
+    //     {48, 100},   // positive escape symbol
+    //     {13, 120},   // 8 zeros
+    //     {28, 150}    // EOB - the rest of the block is zeros
+    // };
+
     std::map<int, u32> symbol_length {
-        {-100, 8},  // negative escape symbol
+        {-100, 9},  // negative escape symbol
         {-5, 9},
         {-4, 8},
-        {-3, 6},
+        {-3, 7},
         {-2, 5},
-        {-1, 3},
-        {0, 1},
+        {-1, 2},
+        {0, 2},
         {1, 3},
-        {2, 5},
-        {3, 6},
+        {2, 6},
+        {3, 7},
         {4, 8},
         {5, 9},
-        {100, 6},   // positive escape symbol
-        {120, 4},   // 8 zeros
-        {150, 5}    // EOB - the rest of the block is zeros
+        {100, 9},   // positive escape symbol
+        {120, 5},   // 8 zeros
+        {150, 2}    // EOB - the rest of the block is zeros
     };
 
     std::map<int, u32> symbol_encoding {
-        {-100, 201},  // negative escape symbol
-        {-5, 406},
-        {-4, 202},
-        {-3, 49},
-        {-2, 31},
-        {-1, 5},
+        {-100, 500},  // negative escape symbol
+        {-5, 501},
+        {-4, 248},
+        {-3, 122},
+        {-2, 28},
+        {-1, 1},
         {0, 0},
-        {1, 4},
-        {2, 29},
-        {3, 51},
-        {4, 200},
-        {5, 407},
-        {100, 48},   // positive escape symbol
-        {120, 13},   // 8 zeros
-        {150, 28}    // EOB - the rest of the block is zeros
+        {1, 6},
+        {2, 60},
+        {3, 123},
+        {4, 249},
+        {5, 502},
+        {100, 503},   // positive escape symbol
+        {120, 29},   // 8 zeros
+        {150, 2}    // EOB - the rest of the block is zeros
     };
 
     std::map<u32, int> encoding_symbol {
-        {201, -100},  // negative escape symbol
-        {406, -5},
-        {202, -4},
-        {49, -3},
-        {31, -2},
-        {5, -1},
+        {500, -100},  // negative escape symbol
+        {501, -5},
+        {248, -4},
+        {122, -3},
+        {28, -2},
+        {1, -1},
         {0, 0},
-        {4, 1},
-        {29, 2},
-        {51, 3},
-        {200, 4},
-        {407, 5},
-        {48, 100},   // positive escape symbol
-        {13, 120},   // 8 zeros
-        {28, 150}    // EOB - the rest of the block is zeros
+        {6, 1},
+        {60, 2},
+        {123, 3},
+        {249, 4},
+        {502, 5},
+        {503, 100},   // positive escape symbol
+        {29, 120},   // 8 zeros
+        {2, 150}    // EOB - the rest of the block is zeros
     };
 
     void print_histograms(){
@@ -201,12 +255,12 @@ namespace stream{
     }
 
     void push_symbol_huffman(OutputBitStream& stream, int symbol){
-        // std::cerr << "push_symbol_huffman " << std::endl;
         u32 num_bits = symbol_length[symbol];
         u32 code_bits = symbol_encoding[symbol];
 
-        for(u32 idx = 0; idx < num_bits; idx++)
+        for(u32 idx = 0; idx < num_bits; idx++){
             stream.push_bit(code_bits >> (num_bits - idx - 1) & 1);
+        }
     }
 
     void push_unary(OutputBitStream& stream, u32 value){
@@ -216,7 +270,6 @@ namespace stream{
     }
 
     u32 count_RLE_zeros(const Array64& array, u32 start){
-        // std::cerr << "count_RLE_zeros" << std::endl;
         u32 idx = start; 
         u32 count = 0;
         while(idx < 64 && array.at(idx) == 0){
@@ -227,7 +280,7 @@ namespace stream{
     }
 
     void push_quantized_array_delta(OutputBitStream& stream, const Array64& array){
-        // std::cerr << "push quantized array delta " << std::endl;
+
         Array64 delta_values = quantized_to_delta(array);
         for(double delta : delta_values)
             delta_frequency[delta]++;
@@ -367,14 +420,14 @@ namespace stream{
     int read_symbol_huffman(InputBitStream& stream){
         int value = 0;
         u32 iter = 0;
-        while(iter < 100){
-            value = (value << 1) | stream.read_bit();
+        while(iter < 10){
+            bool bit_read = stream.read_bit();
+            value = (value << 1) | bit_read;
             auto symbol_ref = encoding_symbol.find(value);
-            if (symbol_ref != encoding_symbol.end()){
+            if (symbol_ref != encoding_symbol.end() && iter >= 1)
                 return symbol_ref->second;      
-            }
+            iter++;
         }
-        std::cerr<<"inifinite loop line 377"<<std::endl;
     }
 
     int read_unary(InputBitStream& stream){
