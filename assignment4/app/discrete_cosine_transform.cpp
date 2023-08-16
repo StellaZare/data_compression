@@ -245,14 +245,14 @@ namespace dct{
             if(quality == low)
                 return 6;
             else if(quality == medium)
-                return 4;
+                return 5;
             else
                 return 2;
         }else if(is_luminance && !is_P_block){
             if(quality == low)
-                return 3;
+                return 4;
             else if(quality == medium)
-                return 2;
+                return 3;
             else
                 return 1;
         }else if(!is_luminance && is_P_block){
@@ -261,12 +261,12 @@ namespace dct{
             else if(quality == medium)
                 return 8;
             else
-                return 6;
+                return 3;
         }else{
             if(quality == low)
                 return 6;
             else if(quality == medium)
-                return 4;
+                return 5;
             else
                 return 2;
         }
