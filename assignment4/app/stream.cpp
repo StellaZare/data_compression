@@ -16,7 +16,7 @@ namespace stream{
         {-2, 5},  
         {-1, 2},  
         {0, 2},   
-        {1, 3},   
+        {1, 2},   
         {2, 5},   
         {3, 7},   
         {4, 9},   
@@ -24,7 +24,7 @@ namespace stream{
         {100, 8},    // positive escape symbol
         {110, 6},    // 4 zeros
         {120, 6},    // 8 zeros
-        {150, 2}     // EOB - the rest of the block is zeros
+        {150, 3}     // EOB - the rest of the block is zeros
     };
 
     std::map<int, u32> symbol_encoding {
@@ -35,7 +35,7 @@ namespace stream{
         {-2, 26},      
         {-1, 1},       
         {0, 0},     
-        {1, 7},     
+        {1, 2},     
         {2, 25},    
         {3, 99},    
         {4, 439},   
@@ -43,7 +43,7 @@ namespace stream{
         {100, 196},   
         {110, 30},    
         {120, 55},    
-        {150, 2}      
+        {150, 7}      
     };
 
     std::map<int, u32> encoding_symbol {
@@ -54,7 +54,7 @@ namespace stream{
         {26, -2},
         {1, -1},
         {0, 0},
-        {7, 1},
+        {2, 1},
         {25, 2},
         {99, 3},
         {439, 4},
@@ -62,7 +62,7 @@ namespace stream{
         {196, 100},  
         {30, 110}, 
         {55, 120}, 
-        {2, 150}
+        {7, 150}
     };
 
     void print_histograms(){
