@@ -6,63 +6,62 @@ namespace stream{
 
     std::map<int,int> delta_frequency {};
     std::map<int,int> RLE_frequency {}; 
-    std::map<int, int> huffman_freq {};
 
-    std::map<int, u32> symbol_length {
-        {-100, 8},   // negative escape symbol
-        {-5, 9},  
-        {-4, 9},  
-        {-3, 7},  
-        {-2, 5},  
-        {-1, 2},  
-        {0, 2},   
-        {1, 3},   
-        {2, 5},   
-        {3, 7},   
-        {4, 9},   
-        {5, 9},   
-        {100, 8},    // positive escape symbol
-        {110, 6},    // 4 zeros
-        {120, 6},    // 8 zeros
-        {150, 2}     // EOB - the rest of the block is zeros
+        std::map<int, u32> symbol_length {
+        {-100, 8},  // negative escape symbol
+        {-5, 9},
+        {-4, 8},
+        {-3, 6},
+        {-2, 5},
+        {-1, 3},
+        {0, 1},
+        {1, 3},
+        {2, 5},
+        {3, 6},
+        {4, 8},
+        {5, 9},
+        {100, 6},   // positive escape symbol
+        {110, 5},   // 4 zeros
+        {120, 4},   // 8 zeros
+        {150, 5}    // EOB - the rest of the block is zeros
     };
 
     std::map<int, u32> symbol_encoding {
-        {-100, 218},   
-        {-5, 394},     
-        {-4, 438},     
-        {-3, 108},     
-        {-2, 26},      
-        {-1, 1},       
-        {0, 0},     
-        {1, 7},     
-        {2, 25},    
-        {3, 99},    
-        {4, 439},   
-        {5, 395},   
-        {100, 196},   
-        {110, 30},    
-        {120, 55},    
-        {150, 2}      
+        {-100, 201},  // negative escape symbol
+        {-5, 406},
+        {-4, 202},
+        {-3, 49},
+        {-2, 31},
+        {-1, 5},
+        {0, 0},
+        {1, 4},
+        {2, 29},
+        {3, 51},
+        {4, 200},
+        {5, 407},
+        {100, 48},   // positive escape symbol
+        {110, 30},   // 4 zeros
+        {120, 13},   // 8 zeros
+        {150, 28}    // EOB - the rest of the block is zeros
     };
 
     std::map<int, u32> encoding_symbol {
-        {218, -100},
-        {394, -5},
-        {438, -4},
-        {108, -3},
-        {26, -2},
-        {1, -1},
+        {201, -100},  // negative escape symbol
+        {406, -5},
+        {202, -4},
+        {49, -3},
+        {31, -2},
+        {5, -1},
         {0, 0},
-        {7, 1},
-        {25, 2},
-        {99, 3},
-        {439, 4},
-        {395, 5},
-        {196, 100},  
-        {30, 110}, 
-        {55, 120}, 
-        {2, 150}
+        {4, 1},
+        {29, 2},
+        {51, 3},
+        {200, 4},
+        {407, 5},
+        {48, 100},   // positive escape symbol
+        {30, 110},   // 4 zeros
+        {13, 120},   // 8 zeros
+        {28, 150}    // EOB - the rest of the block is zeros
     };
 
     void print_histograms(){
@@ -91,12 +90,6 @@ namespace stream{
             sum_RLE+=frequency;
         }
         std::cerr << "sum RLE " << sum_RLE << std::endl;
-    }
-
-    void huffman_print(){
-        for (const auto& [symbol, frequency] : huffman_freq){
-            std::cerr << symbol << "\t--> " << frequency << std::endl;
-        }
     }
 
     void push_header(OutputBitStream& stream, dct::Quality q, u16 height, u16 width){
@@ -211,8 +204,7 @@ namespace stream{
     }
 
     void push_symbol_huffman(OutputBitStream& stream, int symbol){
-        huffman_freq[symbol]++;
-
+        // std::cerr << "push_symbol_huffman " << std::endl;
         u32 num_bits = symbol_length[symbol];
         u32 code_bits = symbol_encoding[symbol];
 

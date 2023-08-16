@@ -135,7 +135,5 @@ int main(int argc, char** argv){
     output_stream.flush_to_byte();
 
     // stream::print_histograms();
-    stream::huffman_print();
-
     return 0;
 }
