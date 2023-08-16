@@ -15,7 +15,7 @@
 namespace stream{
 
     void print_histograms();
-    void huffman_histogram();
+    void huffman_print();
 
     /* ----- Compressor code -----*/
 

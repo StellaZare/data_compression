@@ -6,63 +6,60 @@ namespace stream{
 
     std::map<int,int> delta_frequency {};
     std::map<int,int> RLE_frequency {}; 
-    std::map<int, int> huffman_frequency {};
+    std::map<int, int> huffman_freq {};
 
-    std::map<int, u32> symbol_length {
-        {-100, 8},   // negative escape symbol
-        {-5, 9},  
-        {-4, 9},  
-        {-3, 7},  
-        {-2, 5},  
-        {-1, 2},  
-        {0, 2},   
-        {1, 2},   
-        {2, 5},   
-        {3, 7},   
-        {4, 9},   
-        {5, 9},   
-        {100, 8},    // positive escape symbol
-        {110, 6},    // 4 zeros
-        {120, 6},    // 8 zeros
-        {150, 3}     // EOB - the rest of the block is zeros
+    std::map<int, int> symbol_length {
+        {-100, 9}, // negative escape symbol
+        {-5, 9},
+        {-4, 8},
+        {-3, 7},
+        {-2, 5},
+        {-1, 2},
+        {0, 2},
+        {1, 3},
+        {2, 6},
+        {3, 7},
+        {4, 8},
+        {5, 9},
+        {100, 9}, // positive escape symbol
+        {120, 5}, // 8 zeros
+        {150, 2} // EOB - the rest of the block is zeros
     };
 
-    std::map<int, u32> symbol_encoding {
-        {-100, 218},   
-        {-5, 394},     
-        {-4, 438},     
-        {-3, 108},     
-        {-2, 26},      
-        {-1, 1},       
-        {0, 0},     
-        {1, 2},     
-        {2, 25},    
-        {3, 99},    
-        {4, 439},   
-        {5, 395},   
-        {100, 196},   
-        {110, 30},    
-        {120, 55},    
-        {150, 7}      
+    std::map<int, int> symbol_encoding {
+        {-100, 500}, // negative escape symbol
+        {-5, 501},
+        {-4, 248},
+        {-3, 122},
+        {-2, 28},
+        {-1, 0},
+        {0, 1},
+        {1, 6},
+        {2, 60},
+        {3, 123},
+        {4, 249},
+        {5, 502},
+        {100, 503}, // positive escape symbol
+        {120, 29}, // 8 zeros
+        {150, 2} // EOB - the rest of the block is zeros
     };
 
-    std::map<int, u32> encoding_symbol {
-        {218, -100},
-        {394, -5},
-        {438, -4},
-        {108, -3},
-        {26, -2},
-        {1, -1},
-        {0, 0},
-        {2, 1},
-        {25, 2},
-        {99, 3},
-        {439, 4},
-        {395, 5},
-        {196, 100},  
-        {30, 110}, 
-        {55, 120}, 
-        {7, 150}
+    std::map<int, int> encoding_symbol {
+        {500, -100},
+        {501, -5},
+        {248, -4},
+        {122, -3},
+        {28, -2},
+        {0, -1},
+        {1, 0},
+        {6, 1},
+        {60, 2},
+        {123, 3},
+        {249, 4},
+        {502, 5},
+        {503, 100},
+        {29, 120},
+        {2, 150}
     };
 
     void print_histograms(){
@@ -93,13 +90,9 @@ namespace stream{
         std::cerr << "sum RLE " << sum_RLE << std::endl;
     }
 
-    void huffman_histogram(){
-        std::cerr << "symbol usage stats" << std::endl;
-        int sum_delta {0};
-        int neg_x {};
-        int pos_x {};
-        for (const auto& [symbol, frequency] : huffman_frequency){
-            std::cerr << "symbol [" << symbol << "] --> " << frequency << std::endl;
+    void huffman_print(){
+        for (const auto& [symbol, frequency] : huffman_freq){
+            std::cerr << symbol << "\t--> " << frequency << std::endl;
         }
     }
 
@@ -180,28 +173,28 @@ namespace stream{
         return count;
     }
 
-    // void push_motion_vector_RLE(OutputBitStream& stream, const std::vector<int>& mv){
-    //     // push first vector normally
-    //     push_value_n(stream, mv.at(0), 4);
-    //     push_value_n(stream, mv.at(1), 4);
+    void push_motion_vector_RLE(OutputBitStream& stream, const std::vector<int>& mv){
+        // push first vector normally
+        push_value_n(stream, mv.at(0), 4);
+        push_value_n(stream, mv.at(1), 4);
 
-    //     u32 idx = 2;
-    //     while(idx < mv.size()){
-    //         if(mv.at(idx) != 0){
-    //             push_delta_value(stream, mv.at(idx++));
-    //         }else{
-    //             u32 count = idx +1;
-    //             while(count < mv.size() && mv.at(count) == 0 && count-idx < 8){
-    //                 count++;
-    //             }
-    //             u32 num_zeros = count - idx -1;
-    //             // push initial 0 then count
-    //             stream.push_bit(0);
-    //             stream.push_bits(num_zeros, 3);
-    //             idx = count;
-    //         }
-    //     }
-    // }
+        u32 idx = 2;
+        while(idx < mv.size()){
+            if(mv.at(idx) != 0){
+                push_delta_value(stream, mv.at(idx++));
+            }else{
+                u32 count = idx +1;
+                while(count < mv.size() && mv.at(count) == 0 && count-idx < 8){
+                    count++;
+                }
+                u32 num_zeros = count - idx -1;
+                // push initial 0 then count
+                stream.push_bit(0);
+                stream.push_bits(num_zeros, 3);
+                idx = count;
+            }
+        }
+    }
 
     Array64 quantized_to_delta(const Array64& quantized){
         Array64 delta_values;
@@ -215,8 +208,8 @@ namespace stream{
     }
 
     void push_symbol_huffman(OutputBitStream& stream, int symbol){
-        huffman_frequency[symbol]++;
-        // std::cerr << "push_symbol_huffman " << std::endl;
+        huffman_freq[symbol]++;
+
         u32 num_bits = symbol_length[symbol];
         u32 code_bits = symbol_encoding[symbol];
 
@@ -225,7 +218,6 @@ namespace stream{
     }
 
     void push_unary(OutputBitStream& stream, u32 value){
-        // std::cerr << "push_unary value " << value << std::endl;
         for(u32 idx = 0; idx < value; idx++)
             stream.push_bit(1);
         stream.push_bit(0);
@@ -269,16 +261,12 @@ namespace stream{
                 idx += num_zeros;
 
                 if(idx == 64){  
-                    push_symbol_huffman(stream, 150);   // the rest zero
+                    push_symbol_huffman(stream, 150);
                     return;
                 }
                 while(num_zeros >= 8){
                     push_symbol_huffman(stream, 120);   // 8 zeros
                     num_zeros -= 8;
-                }
-                while(num_zeros >= 4){
-                    push_symbol_huffman(stream, 110);   // 4 zeros
-                    num_zeros -= 4;
                 }
                 while(num_zeros > 0){
                     push_symbol_huffman(stream, 0);     // single zero
@@ -385,7 +373,7 @@ namespace stream{
     }
 
     int read_symbol_huffman(InputBitStream& stream){
-        u32 value = 0;
+        int value = 0;
         u32 iter = 0;
         while(iter < 100){
             value = (value << 1) | stream.read_bit();
@@ -419,9 +407,6 @@ namespace stream{
                 delta_values.at(idx++) = -1 * read_unary(stream);
             }else if(curr_symbol == 100){
                 delta_values.at(idx++) = 1 * read_unary(stream);
-            }else if(curr_symbol == 110){
-                for(u32 i = 0; i < 4; i++)
-                    delta_values.at(idx++) = 0;
             }else if(curr_symbol == 120){
                 for(u32 i = 0; i < 8; i++)
                     delta_values.at(idx++) = 0;
