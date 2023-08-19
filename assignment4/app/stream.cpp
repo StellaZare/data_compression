@@ -99,11 +99,9 @@ namespace stream{
         if(num < 0){
             // negative value push (1) value
             stream.push_bit(1);
-            stream.push_bit(1);
             stream.push_u16(-1*num);
         }else{
             // positive or zero value push (0) value
-            stream.push_bit(1);
             stream.push_bit(0);
             stream.push_u16(num);
         }
@@ -113,11 +111,9 @@ namespace stream{
         if(value < 0){
             // negative value push (1) value
             stream.push_bit(1);
-            stream.push_bit(1);
             stream.push_bits((-1*value), num_bits);
         }else{
             // positive or zero value push (0) value
-            stream.push_bit(1);
             stream.push_bit(0);
             stream.push_bits((value), num_bits);
         }
@@ -286,7 +282,6 @@ namespace stream{
     int read_value(InputBitStream& stream){
         // (+) sign = 0    (-) sign = 1
         bool sign = stream.read_bit();
-        sign = stream.read_bit();
         int num  = stream.read_u16();
         num = (sign == 1) ? (-1*num) : num ;
         return num;
@@ -295,7 +290,6 @@ namespace stream{
     int read_value_n(InputBitStream& stream, u16 num_bits){
         // (+) sign = 0    (-) sign = 1
         bool sign = stream.read_bit();
-        sign = stream.read_bit();
         int num  = stream.read_bits(num_bits);
         num = (sign == 1) ? (-1*num) : num ;
         return num;

@@ -137,7 +137,7 @@ namespace helper{
 
     void push_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, OutputBitStream& output_stream){
         // Push number of motion vectors
-        stream::push_value_n(output_stream, motion_vectors.size(), 9);
+        output_stream.push_u16(motion_vectors.size());
 
         // No motion vectors to push so return 
         if(motion_vectors.size() == 0)
@@ -246,7 +246,7 @@ namespace helper{
 
     void read_motion_vectors(std::list<std::pair<int, int>>& motion_vectors, InputBitStream& input_stream){
         // push number of motiocln vectors
-        int num_vectors = stream::read_value_n(input_stream, 9);
+        int num_vectors = input_stream.read_u16();
 
         std::pair<int, int> first_vector;
         if (num_vectors > 0){
