@@ -67,7 +67,8 @@ int main(int argc, char** argv){
     while (reader.read_next_frame()){
         // Get the active frame
         YUVFrame420& active_frame = reader.frame();
-        output_stream.push_byte(1);
+        // output_stream.push_byte(1);
+        output_stream.push_bit(1);
 
         // Separate Y Cb and Cr channels
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height, width);
@@ -96,7 +97,6 @@ int main(int argc, char** argv){
         std::list<Block8x8> compressed_blocks;
         std::list<std::pair<int, int>> motion_vectors;
         double num_bad_motion_vectors {0};
-
         for(u32 macro_idx = 0; macro_idx < num_macro_blocks; macro_idx++){
             // create 16x16 Y-block
             u32 Y_idx = 4 * macro_idx;
@@ -131,7 +131,7 @@ int main(int argc, char** argv){
             frame_number++;
     }
 
-    output_stream.push_byte(0); //Flag to indicate end of data
+    output_stream.push_bit(0); //Flag to indicate end of data
     output_stream.flush_to_byte();
 
     // stream::print_histograms();

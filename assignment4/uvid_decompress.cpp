@@ -54,7 +54,7 @@ int main(int argc, char** argv){
     // To store uncompressed blocks 
     YUVFrame420 previous_frame {width, height};
 
-    while (input_stream.read_byte()){
+    while (input_stream.read_bit()){
 
         // Read the motion vectors
         std::list<std::pair<int, int>> motion_vectors;
