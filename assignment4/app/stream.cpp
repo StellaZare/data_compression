@@ -142,26 +142,6 @@ namespace stream{
         }
     }
 
-    u32 push_RLE_zeros(OutputBitStream& stream, const Array64& array, u32 start){
-        u32 idx = start; 
-        u32 count = 0;
-        while(idx < 64 && array.at(idx) == 0){
-            count++;
-            idx++;
-        }
-
-        // push initial 0 then count
-        stream.push_bit(0);
-        stream.push_bits(count, 6);
-
-  
-        if(idx == 64)
-            RLE_frequency[1000]++;
-        else
-            RLE_frequency[count]++;
-        return count;
-    }
-
     Array64 quantized_to_delta(const Array64& quantized){
         Array64 delta_values;
         delta_values.at(0) = quantized.at(0);
@@ -303,12 +283,6 @@ namespace stream{
             quantized.at(idx) = quantized.at(idx-1) + delta.at(idx);
         }
         return quantized;
-    }
-
-    void add_RLE_zeros(Array64& delta_values, u32 start, u32 count){
-        for(u32 idx = start; idx < 64 && idx < start+count; idx++){
-            delta_values.at(idx) = 0;
-        }
     }
 
     int read_symbol_huffman(InputBitStream& stream){
