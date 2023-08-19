@@ -67,7 +67,6 @@ int main(int argc, char** argv){
     while (reader.read_next_frame()){
         // Get the active frame
         YUVFrame420& active_frame = reader.frame();
-        // output_stream.push_byte(1);
         output_stream.push_bit(1);
 
         // Separate Y Cb and Cr channels
@@ -133,7 +132,5 @@ int main(int argc, char** argv){
 
     output_stream.push_bit(0); //Flag to indicate end of data
     output_stream.flush_to_byte();
-
-    // stream::print_histograms();
     return 0;
 }
