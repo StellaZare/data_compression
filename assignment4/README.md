@@ -31,6 +31,7 @@ On the decompressor side, the motion vectors are saved into a queue-like data st
 	- ice_cif.y4m         compression ratio: 12.6426
 	- pamphlet_cif.y4m    compression ratio: 13.3937
 	- flower_cif.y4m      compression ratio: 10.7215
+- Achieves real-time decompression on video samples with resolution at leas 640x480
 
 ## Architecture
 >A high level description of the architecture of your implementation, including some information about the algorithms and data structures used.
