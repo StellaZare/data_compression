@@ -162,29 +162,6 @@ namespace stream{
         return count;
     }
 
-    void push_motion_vector_RLE(OutputBitStream& stream, const std::vector<int>& mv){
-        // push first vector normally
-        push_value_n(stream, mv.at(0), 4);
-        push_value_n(stream, mv.at(1), 4);
-
-        u32 idx = 2;
-        while(idx < mv.size()){
-            if(mv.at(idx) != 0){
-                push_delta_value(stream, mv.at(idx++));
-            }else{
-                u32 count = idx +1;
-                while(count < mv.size() && mv.at(count) == 0 && count-idx < 8){
-                    count++;
-                }
-                u32 num_zeros = count - idx -1;
-                // push initial 0 then count
-                stream.push_bit(0);
-                stream.push_bits(num_zeros, 3);
-                idx = count;
-            }
-        }
-    }
-
     Array64 quantized_to_delta(const Array64& quantized){
         Array64 delta_values;
         delta_values.at(0) = quantized.at(0);
@@ -332,29 +309,6 @@ namespace stream{
         for(u32 idx = start; idx < 64 && idx < start+count; idx++){
             delta_values.at(idx) = 0;
         }
-    }
-
-    std::vector<int> read_motion_vector_RLE(InputBitStream& stream, int num_vectors){
-        std::vector<int> mv;
-
-        // push first vector normally
-        mv.push_back(read_value_n(stream, 4));
-        mv.push_back(read_value_n(stream, 4));
-
-        u32 idx = 2;
-        while(idx < (num_vectors * 2)){
-            int value = read_delta_value(stream);
-            mv.push_back(value);
-            if(value == 0){
-                u32 num_zeros = stream.read_bits(3);
-                for(u32 count = 0; count < num_zeros; count++){
-                    mv.push_back(0);
-                }
-                idx += num_zeros;
-            }
-            idx++;
-        }
-        return mv;
     }
 
     int read_symbol_huffman(InputBitStream& stream){
