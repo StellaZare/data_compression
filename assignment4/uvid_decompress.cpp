@@ -21,6 +21,7 @@
 #include <string>
 #include <cassert>
 #include <queue>
+#include <list>
 #include <cstdint>
 #include <tuple>
 #include "input_stream.hpp"
@@ -41,33 +42,37 @@ int main(int argc, char** argv){
     u16 height, width;
     stream::read_header(input_stream, quality, height, width);
 
-    // calculate number of Y_matrix blocks expected
-    u16 Y_blocks_wide = (width%8 == 0) ? width/8 : (width/8)+1;
-    u16 Y_blocks_high = (height%8 == 0) ? height/8 : (height/8)+1;
-    u16 num_Y_blocks = Y_blocks_wide * Y_blocks_high;
-
-    // calculate number of Cb and Cr blocks expected
+    // calculate number of macro blocks expected
     u16 scaled_height = height/2;
     u16 scaled_width = width/2; 
     u16 C_blocks_wide = (scaled_width%8 == 0) ? scaled_width/8 : (scaled_width/8)+1;
     u16 C_blocks_high = (scaled_height%8 == 0) ? scaled_height/8 : (scaled_height/8)+1;
-    u16 num_C_blocks = C_blocks_wide * C_blocks_high;
+    u16 num_macro_blocks = C_blocks_wide * C_blocks_high;
 
     YUVStreamWriter writer {std::cout, width, height};
 
     // To store uncompressed blocks 
-    std::queue<Block8x8> Y_uncompressed, Cb_uncompressed, Cr_uncompressed; 
+    YUVFrame420 previous_frame {width, height};
 
-    u8 flag = input_stream.read_byte();
-    while (flag){
+    while (input_stream.read_bit()){
+
+        // Read the motion vectors
+        std::list<std::pair<int, int>> motion_vectors;
+        helper::read_motion_vectors(motion_vectors, input_stream);
+        
         // read blocks for each color channel in row major order
         std::vector<Block8x8> Y_blocks, Cb_blocks, Cr_blocks;
-        if(flag == 1){
-            helper::decompress_I_frame(num_Y_blocks, num_C_blocks, Y_blocks, Cb_blocks, Cr_blocks, 
-                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, input_stream);
-        }else{
-            helper::decompress_P_frame(num_Y_blocks, num_C_blocks, Y_blocks, Cb_blocks, Cr_blocks, 
-                Y_uncompressed, Cb_uncompressed, Cr_uncompressed, quality, input_stream);
+
+        for(u32 macro_idx = 0; macro_idx < num_macro_blocks; macro_idx++){
+            bool block_type = input_stream.read_bit();
+            if(block_type == 0){
+                // I-block
+                helper::decompress_I_block(Y_blocks, Cb_blocks, Cr_blocks, quality, input_stream);
+            }else{
+                //P-block
+                helper::decompress_P_block(Y_blocks, Cb_blocks, Cr_blocks, quality, input_stream, macro_idx, motion_vectors.front(), previous_frame);
+                motion_vectors.pop_front();
+            }
         }
 
         auto Y_matrix = helper::create_2d_vector<unsigned char>(height,width);
@@ -78,18 +83,18 @@ int main(int argc, char** argv){
         dct::undo_partition_C_channel(Cr_blocks, height/2 ,width/2, Cr_matrix);
 
         // Create and write into frame
-        YUVFrame420& frame = writer.frame();
+        YUVFrame420& active_frame = writer.frame();
         writer.write_frame();
         for (u32 y = 0; y < height; y++)
             for (u32 x = 0; x < width; x++)
-                frame.Y(x,y) = Y_matrix.at(y).at(x);
+                active_frame.Y(x,y) = Y_matrix.at(y).at(x);
         for (u32 y = 0; y < height/2; y++)
             for (u32 x = 0; x < width/2; x++){
-                frame.Cb(x,y) = Cb_matrix.at(y).at(x);
-                frame.Cr(x,y) = Cr_matrix.at(y).at(x);
+                active_frame.Cb(x,y) = Cb_matrix.at(y).at(x);
+                active_frame.Cr(x,y) = Cr_matrix.at(y).at(x);
             }
 
-        flag = input_stream.read_byte();
+        previous_frame = active_frame;
     }
 
     return 0;

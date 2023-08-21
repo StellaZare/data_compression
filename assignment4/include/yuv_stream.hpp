@@ -57,11 +57,11 @@ public:
         return Cr_data.at(y*width/chroma_ratio_x + x);
     }
 
-    unsigned int get_Width(){
+    unsigned int get_Width() const {
         return width;
     }
 
-    unsigned int get_height(){
+    unsigned int get_Height() const {
         return height;
     }
     

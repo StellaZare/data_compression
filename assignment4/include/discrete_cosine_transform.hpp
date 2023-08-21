@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <array>
+#include "yuv_stream.hpp"
 
 using Block8x8 = std::array<std::array<double, 8>, 8>;
 using Block16x16 = std::array<std::array<double, 16>, 16>;
@@ -108,18 +109,20 @@ namespace dct {
     Block8x8 transpose_block(const Block8x8& block);
     Block8x8 get_delta_block(const Block8x8& block1, const Block8x8& block2);
     Block8x8 add_delta_block(const Block8x8& block, const Block8x8& delta);
+    Block16x16 create_macroblock(const Block8x8& b1, const Block8x8& b2, const Block8x8& b3, const Block8x8& b4);
+    void get_prev_blocks(u32 macro_idx, YUVFrame420& prev_frame, const std::pair<u32, u32>& vector, std::vector<Block8x8>& prev_blocks);
 
     /* ----- Compressor Functions ----- */
     void partition_Y_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
     void partition_C_channel(std::vector<Block8x8>& blocks, u32 height, u32 width, const std::vector<std::vector<unsigned char>>& channel);
     Block8x8 get_dct(const Block8x8 &block);
-    Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
+    Block8x8 quantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block);
     Direction get_direction(u32 r, u32 c, Direction curr);
     Array64 block_to_array(const Block8x8& block);
 
     /* ----- Decompressor Functions ----- */
     Block8x8 array_to_block(const Array64& array);
-    Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix);
+    Block8x8 unquantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block);
     Block8x8 get_inverse_dct(const Block8x8& block);
     void undo_partition_C_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);
     void undo_partition_Y_channel(const std::vector<Block8x8>& blocks, u32 height, u32 width, std::vector<std::vector<unsigned char>>& channel);

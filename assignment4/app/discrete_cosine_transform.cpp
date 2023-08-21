@@ -1,4 +1,5 @@
 #include "discrete_cosine_transform.hpp"
+
 #include <iostream>
 
 namespace dct{
@@ -96,6 +97,82 @@ namespace dct{
         return result;
     }
 
+    Block16x16 create_macroblock(const Block8x8& b1, const Block8x8& b2, const Block8x8& b3, const Block8x8& b4){
+        Block16x16 macroblock;
+        for(u32 b1_r = 0; b1_r < 8; b1_r++){
+            for(u32 b1_c = 0; b1_c < 8; b1_c++){
+                macroblock.at(b1_r).at(b1_c) = b1.at(b1_r).at(b1_c);
+            }
+        }
+        for(u32 b2_r = 0; b2_r < 8; b2_r++){
+            for(u32 b2_c = 0; b2_c < 8; b2_c++){
+                macroblock.at(b2_r).at(b2_c+8) = b2.at(b2_r).at(b2_c);
+            }
+        }
+        for(u32 b3_r = 0; b3_r < 8; b3_r++){
+            for(u32 b3_c = 0; b3_c < 8; b3_c++){
+                macroblock.at(b3_r+8).at(b3_c) = b3.at(b3_r).at(b3_c);
+            }
+        }
+        for(u32 b4_r = 0; b4_r < 8; b4_r++){
+            for(u32 b4_c = 0; b4_c < 8; b4_c++){
+                macroblock.at(b4_r+8).at(b4_c+8) = b4.at(b4_r).at(b4_c);
+            }
+        }
+        return macroblock;
+    }
+
+    void get_prev_blocks(u32 macro_idx, YUVFrame420& prev_frame, const std::pair<u32, u32>& vector, std::vector<Block8x8>& prev_blocks){
+        
+        u32 macroblocks_wide = prev_frame.get_Width() / 16;
+
+        // (0,0) coordinate of active block in the frame
+        u32 B_x = (macro_idx % macroblocks_wide) * 16;
+        u32 B_y = (macro_idx / macroblocks_wide) * 16;
+
+        // (0,0) coordinate of compare block
+        u32 P_x = B_x + vector.first;
+        u32 P_y = B_y + vector.second;
+       
+        Block8x8 block;
+        // Push back Y blocks
+        // Top-left Y 8x8 sub-block
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+c, P_y+r);
+        prev_blocks.push_back(block);
+        
+        // Top-right 8x8 sub-block
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+8+c, P_y+r);
+        prev_blocks.push_back(block);
+
+        // Bottom-left 8x8 sub-block
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+c, P_y+8+r);
+        prev_blocks.push_back(block);
+
+        // Bottom-right 8x8 sub-block
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Y(P_x+8+c, P_y+8+r);
+        prev_blocks.push_back(block);
+
+        //Push back Cb block
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Cb((P_x+c)/2,(P_y+r)/2);
+        prev_blocks.push_back(block);
+
+        // Push back Cr block
+        for(u32 r = 0; r < 8; r++)
+            for(u32 c = 0; c < 8; c++)
+                block.at(r).at(c) = prev_frame.Cr((P_x+c)/2,(P_y+r)/2);
+        prev_blocks.push_back(block);
+    }
+
     /* ----- Compressor Functions ----- */
 
     // given a color channel partitions into 8x8 blocks and adds blocks to vector in row major order
@@ -163,22 +240,51 @@ namespace dct{
         return multiply_block(result, c_matrix_transpose);
     }
 
-    // returns the quantized block calculated using the provided quantization matrix at the provided quality 
-    Block8x8 quantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
-        double multiplier;
-        if(quality == low){
-            multiplier = 2;
-        }else if(quality == medium){
-            multiplier = 1;
+    double get_multiplier(Quality quality, bool is_luminance, bool is_P_block){
+        if(is_luminance && is_P_block){
+            if(quality == low)
+                return 6;
+            else if(quality == medium)
+                return 5;
+            else
+                return 2;
+        }else if(is_luminance && !is_P_block){
+            if(quality == low)
+                return 4;
+            else if(quality == medium)
+                return 3;
+            else
+                return 1;
+        }else if(!is_luminance && is_P_block){
+            if(quality == low)
+                return 10;
+            else if(quality == medium)
+                return 8;
+            else
+                return 3;
         }else{
-            multiplier = 0.5;
+            if(quality == low)
+                return 6;
+            else if(quality == medium)
+                return 5;
+            else
+                return 2;
         }
+    }
+
+    // returns the quantized block calculated using the provided quantization matrix at the provided quality 
+    Block8x8 quantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block){
+        double multiplier = get_multiplier(quality, is_luminance, is_P_block);
 
         Block8x8 result;
-        for(u32 r = 0; r < 8; r++){
-            for(u32 c = 0; c < 8; c++){
-                result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * q_matrix.at(r).at(c)) );
-            }
+        if(is_luminance){
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * luminance.at(r).at(c)) );
+        }else{
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = std::round(block.at(r).at(c) / (multiplier * chrominance.at(r).at(c)) );
         }
         return result;
     }
@@ -248,21 +354,18 @@ namespace dct{
     }
 
     // returns the unquantized block calculated using the provided quantization matrix at the provided quality 
-    Block8x8 unquantize_block(const Block8x8& block, Quality quality, const Block8x8& q_matrix){
-        double multiplier;
-        if(quality == low){
-            multiplier = 2;
-        }else if(quality == medium){
-            multiplier = 1;
-        }else{
-            multiplier = 0.5;
-        }
+    Block8x8 unquantize_block(const Block8x8& block, Quality quality, bool is_luminance, bool is_P_block){
+        double multiplier = get_multiplier(quality, is_luminance, is_P_block);
 
         Block8x8 result;
-        for(u32 r = 0; r < 8; r++){
-            for(u32 c = 0; c < 8; c++){
-                result.at(r).at(c) = block.at(r).at(c) * (multiplier * q_matrix.at(r).at(c));
-            }
+        if (is_luminance){
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = block.at(r).at(c) * (multiplier * luminance.at(r).at(c));
+        }else{
+            for(u32 r = 0; r < 8; r++)
+                for(u32 c = 0; c < 8; c++)
+                    result.at(r).at(c) = block.at(r).at(c) * (multiplier * chrominance.at(r).at(c));
         }
         return result;
     }
