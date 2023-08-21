@@ -17,4 +17,3 @@ set(SOURCES
 
 add_executable(uvid_compress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_compress.cpp ${SOURCES})
 add_executable(uvid_decompress ${CMAKE_CURRENT_SOURCE_DIR}/uvid_decompress.cpp ${SOURCES})
-add_executable(huffman ${CMAKE_CURRENT_SOURCE_DIR}/app/huffman.cpp)
