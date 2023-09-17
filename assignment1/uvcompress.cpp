@@ -1,12 +1,3 @@
-/* uvcompress.cpp
-   CSC 485B/CSC 578B
-
-   Stella Zarei
-   V00927722
-
-   B. Bird - 2023-05-01
-*/
-
 #include <iostream>
 #include <unordered_map>
 #include <string>
